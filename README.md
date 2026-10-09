@@ -156,8 +156,8 @@ Every dataset has one metadata record in `metadata/`. Fields marked **core** are
 ## 8. Getting started
 
 ```bash
-git clone <repo-url>
-cd <repo-folder>
+git clone https://github.com/soloadio/Canadian-Risk-Data-Hub
+cd Canadian-Risk-Data-Hub
 python -m venv .venv
 source .venv/bin/activate        # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
