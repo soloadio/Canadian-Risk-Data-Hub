@@ -1,0 +1,18 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+.ipynb_checkpoints/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+
+# Secrets
+.env
+
+# Large data files (the script and metadata make these reproducible)
+# Uncomment to exclude raw and processed data from Git:
+# raw/**/*.csv
+# processed/**/*.csv

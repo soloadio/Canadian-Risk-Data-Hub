@@ -1,0 +1,3 @@
+# Python dependencies (add as scripts are built)
+requests
+pandas
