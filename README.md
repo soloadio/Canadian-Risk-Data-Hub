@@ -8,7 +8,7 @@ Part of the Risk Analytics Institute project *Building an AI-Ready Canadian Risk
 
 ---
 
-## 1. Goals
+## Goals
 
 - One consistent place for every dataset the team acquires.
 - Every dataset documented with the same metadata, so it can be understood, trusted and reused by a new student, an RAI analyst, a future maintainer, or an AI application.
@@ -23,7 +23,7 @@ Source identification -> evaluation -> repeatable acquisition -> raw storage
 
 ---
 
-## 2. Repository structure
+## Repository structure
 
 ```
 data_hub/
@@ -51,7 +51,7 @@ data_hub/
 
 ---
 
-## 3. Raw vs. processed vs. analysis-ready data
+## Raw vs. processed vs. analysis-ready data
 
 | Stage | What it is | Allowed changes | Example |
 |---|---|---|---|
@@ -63,7 +63,7 @@ Each stage is generated from the previous one by a script, never by hand. This k
 
 ---
 
-## 4. Naming conventions
+## Naming conventions
 
 **Every dataset gets one ID**, built from four parts joined by underscores:
 
@@ -92,7 +92,7 @@ Only raw files carry a date at the end. It is the day the data was downloaded (n
 
 ---
 
-## 5. Common metadata
+## Common metadata
 
 Every dataset has one metadata record in `metadata/`. Fields marked **core** are required; the rest are optional or filled in automatically by the acquisition script.
 
@@ -124,7 +124,7 @@ Every dataset has one metadata record in `metadata/`. Fields marked **core** are
 
 ---
 
-## 6. Conventions
+## Conventions
 
 **Dates.** ISO 8601 (`YYYY-MM-DD`). Periodic data uses the first day of the period (August 2026 is `2026-08-01`, Q3 2026 is `2026-07-01`); the `frequency` field records the period length. Timestamps include the UTC offset.
 
@@ -138,7 +138,7 @@ Every dataset has one metadata record in `metadata/`. Fields marked **core** are
 
 ---
 
-## 7. Versioning and workflow
+## Versioning and workflow
 
 **Code and docs** are tracked in Git. Work on short-lived branches, and review before merging to `main`.
 
@@ -153,7 +153,7 @@ Every dataset has one metadata record in `metadata/`. Fields marked **core** are
 
 ---
 
-## 8. Getting started
+## Getting started
 
 ```bash
 git clone https://github.com/soloadio/Canadian-Risk-Data-Hub
@@ -167,6 +167,6 @@ Acquisition instructions for each source are added to `documentation/` as script
 
 ---
 
-## 9. Contributors
+## Contributors
 
 Risk Analytics Institute project team, Fall 2026.
