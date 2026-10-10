@@ -27,6 +27,7 @@ Source identification -> evaluation -> repeatable acquisition -> raw storage
 
 ```
 data_hub/
+├── notebooks/            # Notebooks to study and analyze the datasets
 ├── sources/              # Catalogue of sources: publisher, access method, update cadence
 ├── raw/                  # Data exactly as received
 │   └── <source>/<dataset_id>/
@@ -94,33 +95,40 @@ Only raw files carry a date at the end. It is the day the data was downloaded (n
 
 ## Common metadata
 
-Every dataset has one metadata record in `metadata/`. Fields marked **core** are required; the rest are optional or filled in automatically by the acquisition script.
+Every dataset has one metadata record in `metadata/` (`<dataset_id>.json`). The acquisition script fills in everything it can from the source, so the record is created and refreshed automatically each time the script runs.
 
-| Field | Core | Description |
-|---|---|---|
-| `dataset_id` | ✔ | Internal unique identifier |
-| `dataset_name` | ✔ | Human-readable name |
-| `source_organization` | ✔ | e.g. Statistics Canada |
-| `source_url` | ✔ | Page where the data is published |
-| `source_table_or_series_id` | ✔ | Provider's table or series number |
-| `description` | ✔ | What the data measures |
-| `subject_category` | ✔ | inflation, labour, credit, housing, financial markets, etc. |
-| `geography` | ✔ | Coverage and level (Canada, provinces, CMAs) |
-| `frequency` | ✔ | Observation frequency |
-| `observation_start` / `observation_end` | ✔ | First and last reference period |
-| `units` | ✔ | Units and scaling (e.g. index 2002=100, $ millions) |
-| `seasonal_adjustment` | ✔ | adjusted, unadjusted, or both |
-| `retrieval_method` | ✔ | API, CSV download, bulk download |
-| `retrieval_script` | ✔ | Script that fetches the data |
-| `last_retrieved` | ✔ | Timestamp of the latest retrieval (auto-filled) |
-| `raw_file_location` | ✔ | Path to the raw file |
-| `processed_file_location` | ✔ | Path to the processed file |
-| `update_frequency` | | How often the source publishes |
-| `source_last_updated` | | Provider's own "last updated" date, if available |
-| `checksum` | | SHA-256 of the raw file, to detect changes between retrievals |
-| `licensing_access` | | Licence and access restrictions |
-| `known_limitations` | | Revisions, suppression, classification changes |
-| `quality_notes` | | Results of validation checks |
+**Filled in by the acquisition script**
+
+| Field | Description |
+|---|---|
+| `dataset_id` | Internal unique identifier (see naming conventions) |
+| `dataset_name` | Human-readable name, taken from the source's table title |
+| `source_url` | Page where the data is published |
+| `source_table_or_series_id` | Provider's table or series number |
+| `description` | What the data measures |
+| `subject_category` | inflation, labour, credit, housing, financial markets, etc. Taken from the source catalogue (`sources/statcan_tables.csv`); `uncategorized` if left blank there |
+| `geography` | Coverage kept in the processed file (Canada by default; provinces or all if requested) |
+| `frequency` | Observation frequency, detected from the dates (`monthly`, `quarterly`, `annual`) |
+| `observation_start` / `observation_end` | First and last reference period |
+| `units` | Units and scaling (e.g. index 2002=100, persons in thousands) |
+| `seasonal_adjustment` | Read from the table title (adjusted, unadjusted, or both). Check it against the source |
+| `retrieval_script` | Path of the script that fetched the data |
+| `last_retrieved` | Timestamp of the latest retrieval, with UTC offset |
+| `raw_file_location` | Path to the raw file |
+| `processed_file_location` | Path to the processed file |
+| `source_last_updated` | Provider's own release date for the table, if available |
+| `checksum` | SHA-256 of the raw file, used to tell whether the data changed since the previous retrieval |
+| `quality_notes` | Results of automatic checks (rows, missing values, whether the data changed) |
+
+**Added by hand when known** (not filled in by the script)
+
+| Field | Description |
+|---|---|
+| `update_frequency` | How often the source publishes |
+| `licensing_access` | Licence and access restrictions |
+| `known_limitations` | Revisions, suppression, classification changes, mixed base years |
+
+The publisher and retrieval method are not repeated as separate fields. The publisher is the first part of the `dataset_id` and appears in `source_url`, and every dataset is retrieved by the script named in `retrieval_script`.
 
 ---
 

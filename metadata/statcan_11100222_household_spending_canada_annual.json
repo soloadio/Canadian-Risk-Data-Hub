@@ -1,0 +1,22 @@
+{
+  "dataset_id": "statcan_11100222_household_spending_canada_annual",
+  "dataset_name": "Household spending, Canada, regions and provinces",
+  "source_url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=1110022201",
+  "source_table_or_series_id": "11-10-0222-01",
+  "description": "Household spending, Canada, regions and provinces",
+  "subject_category": "Household",
+  "geography": "13 geographies in source; processed subset: Canada",
+  "frequency": "annual",
+  "observation_start": "2010",
+  "observation_end": "2023",
+  "units": "Dollars",
+  "seasonal_adjustment": "not stated in title, verify on the table page",
+  "retrieval_script": "scripts/acquisition/statcan/download_statcan_table.py",
+  "last_retrieved": "2026-10-10T13:34:43-04:00",
+  "raw_file_location": "raw/statcan/statcan_11100222_household_spending_canada_annual/statcan_11100222_household_spending_canada_annual_20261010.csv",
+  "processed_file_location": "processed/statcan/statcan_11100222_household_spending_canada_annual/statcan_11100222_household_spending_canada_annual.csv",
+  "update_frequency": null,
+  "source_last_updated": "2026-09-18T08:30",
+  "checksum": "sha256:50e9f0511225ae5509689128a87846c5ff90fe27f6ff63c20767d3c238d7fd5c",
+  "quality_notes": "44265 rows in raw file; 3405 rows in processed subset (geography filter: Canada); 108 observations without a value; 0 unrecognized date formats; frequency detected from reference-period spacing."
+}

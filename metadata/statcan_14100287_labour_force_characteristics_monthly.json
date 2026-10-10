@@ -1,0 +1,22 @@
+{
+  "dataset_id": "statcan_14100287_labour_force_characteristics_monthly",
+  "dataset_name": "Labour force characteristics, monthly, seasonally adjusted and trend-cycle",
+  "source_url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=1410028701",
+  "source_table_or_series_id": "14-10-0287-01",
+  "description": "Labour force characteristics, monthly, seasonally adjusted and trend-cycle",
+  "subject_category": "Labour",
+  "geography": "11 geographies in source; processed subset: Canada",
+  "frequency": "monthly",
+  "observation_start": "1976-01",
+  "observation_end": "2026-09",
+  "units": "Percent; Persons in thousands",
+  "seasonal_adjustment": "adjusted",
+  "retrieval_script": "scripts/acquisition/statcan/download_statcan_table.py",
+  "last_retrieved": "2026-10-10T13:34:43-04:00",
+  "raw_file_location": "raw/statcan/statcan_14100287_labour_force_characteristics_monthly/statcan_14100287_labour_force_characteristics_monthly_20261010.csv",
+  "processed_file_location": "processed/statcan/statcan_14100287_labour_force_characteristics_monthly/statcan_14100287_labour_force_characteristics_monthly.csv",
+  "update_frequency": null,
+  "source_last_updated": "2026-10-09T08:30",
+  "checksum": "sha256:f36e9919e4967c292ec098be3896ba0d47916782117e2139d217cec87b548019",
+  "quality_notes": "5475519 rows in raw file; 633969 rows in processed subset (geography filter: Canada); 175958 observations without a value; 0 unrecognized date formats; frequency detected from reference-period spacing."
+}
