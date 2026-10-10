@@ -45,6 +45,7 @@ import time
 import zipfile
 from datetime import datetime
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 import pandas as pd
 import requests
@@ -67,6 +68,8 @@ TITLE_STOP_WORDS = {
     "data", "dollars", "for", "from", "in", "last", "levels", "monthly", "months", "not", "of", "on",
     "per", "quarterly", "seasonally", "adjusted", "unadjusted", "table", "the", "to", "trend",
     "weekly", "with",
+    # Geography is left out of the dataset ID (see the README naming conventions).
+    "canada", "province", "provinces", "region", "regions", "territory", "territories",
 }
 
 
@@ -269,10 +272,11 @@ def build_processed(raw: pd.DataFrame, dataset_id: str, geography: str):
     first_dim = columns.index("DGUID") + 1 if "DGUID" in columns else columns.index("GEO") + 1
     dimension_cols = columns[first_dim:columns.index("UOM")]
 
+    iso_dates = sorted(d for d in (standardize_date(v) for v in raw["REF_DATE"].unique()) if d)
     info = {
         "rows_raw": len(raw),
-        "obs_start": raw["REF_DATE"].min() if len(raw) else None,
-        "obs_end": raw["REF_DATE"].max() if len(raw) else None,
+        "obs_start": iso_dates[0] if iso_dates else None,
+        "obs_end": iso_dates[-1] if iso_dates else None,
         "geographies_in_source": int(raw["GEO"].nunique()),
         "units": sorted(set(raw["UOM"])),
         "geography_filter": geography,
@@ -322,13 +326,17 @@ def build_processed(raw: pd.DataFrame, dataset_id: str, geography: str):
 # Storing results
 # ----------------------------------------------------------------------------
 
-def seasonal_adjustment_from_title(title: str) -> str:
-    lowered = title.lower()
-    if "not seasonally adjusted" in lowered:
-        return "unadjusted"
-    if "seasonally adjusted" in lowered:
-        return "adjusted"
-    return "not stated in title, verify on the table page"
+def release_time_with_offset(release_time: str | None) -> str | None:
+    """StatCan release times are Eastern time without an offset: '2026-09-18T08:30' -> '2026-09-18T08:30:00-04:00'."""
+    if not release_time:
+        return None
+    try:
+        local = datetime.fromisoformat(release_time)
+    except ValueError:
+        return release_time
+    if local.tzinfo is None:
+        local = local.replace(tzinfo=ZoneInfo("America/Toronto"))
+    return local.isoformat(timespec="seconds")
 
 
 def script_location(root: Path) -> str:
@@ -354,7 +362,7 @@ def acquire_table(table: dict, root: Path, session, default_geography: str, now:
     cube = fetch_cube_metadata(session, pid)
     title = cube.get("cubeTitleEn") or f"Statistics Canada table {pretty_table_number(pid)}"
     subject = slug(table.get("subject") or "") or subject_from_title(cube.get("cubeTitleEn") or "")
-    category = table.get("category") or "uncategorized"
+    category = slug(table.get("category") or "") or "uncategorized"
     dataset_id = f"{SOURCE_CODE}_{pid}_{subject}_{frequency}"
 
     processed, info = build_processed(raw, dataset_id, geography)
@@ -401,13 +409,12 @@ def acquire_table(table: dict, root: Path, session, default_geography: str, now:
         "observation_start": info["obs_start"],
         "observation_end": info["obs_end"],
         "units": "; ".join(info["units"]),
-        "seasonal_adjustment": seasonal_adjustment_from_title(title),
         "retrieval_script": script_location(root),
         "last_retrieved": now.isoformat(timespec="seconds"),
         "raw_file_location": relative(raw_path),
         "processed_file_location": relative(processed_path),
         "update_frequency": None,
-        "source_last_updated": cube.get("releaseTime"),
+        "source_last_updated": release_time_with_offset(cube.get("releaseTime")),
         "checksum": checksum,
         "quality_notes": quality_notes,
     }

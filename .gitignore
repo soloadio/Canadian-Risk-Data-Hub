@@ -13,6 +13,6 @@ Thumbs.db
 .env
 
 # Large data files (the script and metadata make these reproducible)
-# Uncomment to exclude raw and processed data from Git:
+# Raw and processed CSVs are excluded from Git:
 raw/**/*.csv
 processed/**/*.csv

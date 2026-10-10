@@ -26,7 +26,7 @@ Source identification -> evaluation -> repeatable acquisition -> raw storage
 ## Repository structure
 
 ```
-data_hub/
+Canadian-Risk-Data-Hub/
 ├── notebooks/            # Notebooks to study and analyze the datasets
 ├── sources/              # Catalogue of sources: publisher, access method, update cadence
 ├── raw/                  # Data exactly as received
@@ -60,7 +60,7 @@ data_hub/
 | **Processed** | Cleaned, standardized version of one raw dataset | Standardize dates, rename variables, convert numeric formats, harmonize units, remove duplicates, standardize missing values | Long-format table: `date, geography, series, value, unit, source, dataset_id` |
 | **Analysis-ready** | Tables organized for a specific analytical use | Filtering, reshaping, joining datasets, derived measures | Monthly CPI and unemployment rate merged by province |
 
-Each stage is generated from the previous one by a script, never by hand. This keeps the original source data preserved and every transformation reproducible.
+Each stage is generated from the previous one by code (a script, or a notebook for analysis-ready tables), never by hand. This keeps the original source data preserved and every transformation reproducible.
 
 ---
 
@@ -77,17 +77,20 @@ Example: `statcan_18100004_cpi_monthly`
 - `statcan`: who publishes it (`boc` for Bank of Canada, and so on)
 - `18100004`: the publisher's own table number, so the data can always be traced back
 - `cpi`: what it measures, in one or two words
-- `monthly`: how often it is published (`daily`, `monthly`, `quarterly` or `annual`)
+- `monthly`: how often the data is observed (`daily`, `weekly`, `biweekly`, `monthly`, `quarterly`, `semiannual`, `annual`, or `irregular` when no regular spacing is found)
 
 **Use that ID in every file that belongs to the dataset:**
 
 | Stage | File name |
 |---|---|
 | Raw | `statcan_18100004_cpi_monthly_20261009.csv` |
+| Raw (table description from StatCan) | `statcan_18100004_cpi_monthly_20261009_cube_metadata.csv` |
 | Processed | `statcan_18100004_cpi_monthly.csv` |
 | Metadata | `statcan_18100004_cpi_monthly.json` |
 
-Only raw files carry a date at the end. It is the day the data was downloaded (not the period the data covers), so each download is kept instead of overwritten.
+Only raw files carry a date at the end. It is the day the data was downloaded (not the period the data covers), so each download is kept instead of overwritten. Statistics Canada ships a description of the table (dimensions, notes, footnotes) alongside the data, and it is saved next to the raw file.
+
+**Analysis-ready tables** can combine several datasets, so they are named after what they contain instead of a dataset ID: subject, then frequency, for example `unemployment_rate_by_age_monthly.csv`. They carry a `dataset_id` column so every row can be traced back to its source.
 
 **General rules:** all lowercase, underscores instead of spaces, and scripts start with a verb (`download_statcan_table.py`). Geography is left out of the ID because many tables cover several, and the stage (raw, processed) is shown by the folder.
 
@@ -97,8 +100,6 @@ Only raw files carry a date at the end. It is the day the data was downloaded (n
 
 Every dataset has one metadata record in `metadata/` (`<dataset_id>.json`). The acquisition script fills in everything it can from the source, so the record is created and refreshed automatically each time the script runs.
 
-**Filled in by the acquisition script**
-
 | Field | Description |
 |---|---|
 | `dataset_id` | Internal unique identifier (see naming conventions) |
@@ -106,27 +107,19 @@ Every dataset has one metadata record in `metadata/` (`<dataset_id>.json`). The 
 | `source_url` | Page where the data is published |
 | `source_table_or_series_id` | Provider's table or series number |
 | `description` | What the data measures |
-| `subject_category` | inflation, labour, credit, housing, financial markets, etc. Taken from the source catalogue (`sources/statcan_tables.csv`); `uncategorized` if left blank there |
-| `geography` | Coverage kept in the processed file (Canada by default; provinces or all if requested) |
-| `frequency` | Observation frequency, detected from the dates (`monthly`, `quarterly`, `annual`) |
-| `observation_start` / `observation_end` | First and last reference period |
+| `subject_category` | inflation, labour, credit, housing, financial_markets, etc. Taken from the source catalogue (`sources/statcan_tables.csv`) and lowercased; `uncategorized` if left blank there |
+| `geography` | Number of geographies in the source, and the coverage kept in the processed file (Canada by default; a province or all if requested) |
+| `frequency` | Observation frequency, detected from the dates (see naming conventions for the values) |
+| `observation_start` / `observation_end` | First and last reference period, as ISO dates (`2010-01-01`) |
 | `units` | Units and scaling (e.g. index 2002=100, persons in thousands) |
-| `seasonal_adjustment` | Read from the table title (adjusted, unadjusted, or both). Check it against the source |
 | `retrieval_script` | Path of the script that fetched the data |
 | `last_retrieved` | Timestamp of the latest retrieval, with UTC offset |
 | `raw_file_location` | Path to the raw file |
 | `processed_file_location` | Path to the processed file |
-| `source_last_updated` | Provider's own release date for the table, if available |
+| `update_frequency` | How often the source publishes. Not detected yet, so left empty (null) |
+| `source_last_updated` | Provider's own release time for the table, with UTC offset, if available |
 | `checksum` | SHA-256 of the raw file, used to tell whether the data changed since the previous retrieval |
-| `quality_notes` | Results of automatic checks (rows, missing values, whether the data changed) |
-
-**Added by hand when known** (not filled in by the script)
-
-| Field | Description |
-|---|---|
-| `update_frequency` | How often the source publishes |
-| `licensing_access` | Licence and access restrictions |
-| `known_limitations` | Revisions, suppression, classification changes, mixed base years |
+| `quality_notes` | Results of automatic checks (rows, missing values, unrecognized dates) |
 
 The publisher and retrieval method are not repeated as separate fields. The publisher is the first part of the `dataset_id` and appears in `source_url`, and every dataset is retrieved by the script named in `retrieval_script`.
 
@@ -171,7 +164,7 @@ source .venv/bin/activate        # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-Acquisition instructions for each source are added to `documentation/` as scripts are built. The Statistics Canada proof of concept is the first.
+Acquisition instructions for each source are added to `documentation/` as scripts are built. The Statistics Canada proof of concept is the first: see [documentation/statcan_acquisition.md](documentation/statcan_acquisition.md).
 
 ---
 
