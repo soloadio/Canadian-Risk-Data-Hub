@@ -1,21 +1,151 @@
 {
   "dataset_id": "statcan_11100222_household_spending_annual",
   "dataset_name": "Household spending, Canada, regions and provinces",
+  "description": "Household spending, Canada, regions and provinces",
+  "source_organization": "Statistics Canada",
   "source_url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=1110022201",
   "source_table_or_series_id": "11-10-0222-01",
-  "description": "Household spending, Canada, regions and provinces",
+  "licence": {
+    "name": "Statistics Canada Open Licence",
+    "url": "https://www.statcan.gc.ca/en/terms-conditions/open-licence"
+  },
+  "access": "Public. Free download, no account or API key required.",
+  "retrieval_method": "Statistics Canada Web Data Service (WDS) REST API: getFullTableDownloadCSV returns the full-table CSV zip (data and table description); getCubeMetadata returns the title, release time, frequency and expected number of data points.",
+  "retrieval_script": "scripts/acquisition/statcan/download_statcan_table.py",
   "subject_category": "household",
-  "geography": "13 geographies in source; processed subset: Canada",
+  "geography": "13 geographies in source; processed file: Canada",
   "frequency": "annual",
+  "frequency_basis": "declared by Statistics Canada",
   "observation_start": "2010-01-01",
   "observation_end": "2023-01-01",
   "units": "Dollars",
-  "retrieval_script": "scripts/acquisition/statcan/download_statcan_table.py",
-  "last_retrieved": "2026-10-10T14:30:02-04:00",
-  "raw_file_location": "raw/statcan/statcan_11100222_household_spending_annual/statcan_11100222_household_spending_annual_20261010.csv",
+  "last_retrieved": "2026-10-18T12:19:24-04:00",
+  "raw_file_location": "raw/statcan/statcan_11100222_household_spending_annual/statcan_11100222_household_spending_annual_20261018.csv",
   "processed_file_location": "processed/statcan/statcan_11100222_household_spending_annual/statcan_11100222_household_spending_annual.csv",
   "update_frequency": null,
   "source_last_updated": "2026-09-18T08:30:00-04:00",
   "checksum": "sha256:50e9f0511225ae5509689128a87846c5ff90fe27f6ff63c20767d3c238d7fd5c",
-  "quality_notes": "44265 rows in raw file; 3405 rows in processed subset (geography filter: Canada); 108 observations without a value; 0 unrecognized date formats; frequency detected from reference-period spacing."
+  "schema_version": 1,
+  "schema": {
+    "columns": [
+      "REF_DATE",
+      "GEO",
+      "DGUID",
+      "Statistic",
+      "Household expenditures, summary-level categories",
+      "UOM",
+      "UOM_ID",
+      "SCALAR_FACTOR",
+      "SCALAR_ID",
+      "VECTOR",
+      "COORDINATE",
+      "VALUE",
+      "STATUS",
+      "SYMBOL",
+      "TERMINATED",
+      "DECIMALS"
+    ],
+    "dimension_columns": [
+      "Statistic",
+      "Household expenditures, summary-level categories"
+    ],
+    "units": [
+      "Dollars"
+    ]
+  },
+  "quality_notes": "44265 rows in raw file; 3405 rows in processed file (Canada). Missing values: 108 of 3405 observations have no value (3.2%): 87 F (too unreliable to be published), 21 .. (not available for the reference period). Validation passed with warnings. Warnings: date_gaps: 3 annual periods have no data in the whole table: ['2018', '2020', '2022']; 1 series skip periods inside their own date range (1 periods in total), e.g. [\"Canada / Average expenditure per household | Collectors' items (e.g. stamps, coins)\"]",
+  "validation": {
+    "status": "passed_with_warnings",
+    "run_at": "2026-10-18T12:19:24-04:00",
+    "validator": "scripts/validation/validate_statcan_dataset.py",
+    "checks": [
+      {
+        "check": "schema",
+        "status": "pass",
+        "detail": "no earlier schema on record; this retrieval is the baseline"
+      },
+      {
+        "check": "row_count",
+        "status": "pass",
+        "detail": "44265 rows received, matching the 44265 data points Statistics Canada reports"
+      },
+      {
+        "check": "geography",
+        "status": "pass",
+        "detail": "kept ['Canada'] out of 13 geographies in the source",
+        "requested": "Canada",
+        "kept": 1
+      },
+      {
+        "check": "dates",
+        "status": "pass",
+        "detail": "every reference period converted to an ISO date"
+      },
+      {
+        "check": "numeric_values",
+        "status": "pass",
+        "detail": "every non-empty VALUE is a number"
+      },
+      {
+        "check": "terminated_series",
+        "status": "pass",
+        "detail": "64 series are marked terminated by Statistics Canada (no longer updated); they are kept with their history",
+        "terminated_series": 64
+      },
+      {
+        "check": "processed_layout",
+        "status": "pass",
+        "detail": "3405 rows with the standard columns"
+      },
+      {
+        "check": "duplicates",
+        "status": "pass",
+        "detail": "no duplicate observations",
+        "exact_duplicates_removed": 0,
+        "conflicting_rows": 0
+      },
+      {
+        "check": "missing_values",
+        "status": "pass",
+        "detail": "108 of 3405 observations have no value (3.2%): 87 F (too unreliable to be published), 21 .. (not available for the reference period)",
+        "missing": 108,
+        "missing_by_status": {
+          "F": 87,
+          "..": 21
+        },
+        "unexplained": 0,
+        "contradicting": 0
+      },
+      {
+        "check": "date_gaps",
+        "status": "warn",
+        "detail": "3 annual periods have no data in the whole table: ['2018', '2020', '2022']; 1 series skip periods inside their own date range (1 periods in total), e.g. [\"Canada / Average expenditure per household | Collectors' items (e.g. stamps, coins)\"]",
+        "table_missing_periods": [
+          "2018",
+          "2020",
+          "2022"
+        ],
+        "series_with_gaps": 1
+      }
+    ]
+  },
+  "retrieval_history": [
+    {
+      "retrieved": "2026-10-10T14:30:02-04:00",
+      "checksum": "sha256:50e9f0511225ae5509689128a87846c5ff90fe27f6ff63c20767d3c238d7fd5c",
+      "raw_file": "raw/statcan/statcan_11100222_household_spending_annual/statcan_11100222_household_spending_annual_20261010.csv",
+      "source_last_updated": "2026-09-18T08:30:00-04:00",
+      "data_changed": null
+    },
+    {
+      "retrieved": "2026-10-18T12:19:24-04:00",
+      "checksum": "sha256:50e9f0511225ae5509689128a87846c5ff90fe27f6ff63c20767d3c238d7fd5c",
+      "raw_file": "raw/statcan/statcan_11100222_household_spending_annual/statcan_11100222_household_spending_annual_20261018.csv",
+      "source_last_updated": "2026-09-18T08:30:00-04:00",
+      "data_changed": false,
+      "schema_version": 1,
+      "validation_status": "passed_with_warnings"
+    }
+  ],
+  "ai_use_note": "The acquisition, processing and validation code was written with the help of an AI coding assistant (Claude, Anthropic) and reviewed by the project team. No data values were generated, edited or imputed by AI: raw files are stored exactly as published by Statistics Canada, and the processed file is produced by the deterministic code named in retrieval_script. The automated checks recorded under validation were run on this retrieval."
 }
