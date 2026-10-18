@@ -16,3 +16,6 @@ Thumbs.db
 # Raw and processed CSVs are excluded from Git:
 raw/**/*.csv
 processed/**/*.csv
+# Temporary files left by an interrupted download
+*.partial
+.pytest_cache/

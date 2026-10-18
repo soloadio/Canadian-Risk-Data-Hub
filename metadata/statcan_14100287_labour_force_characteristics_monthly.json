@@ -1,21 +1,153 @@
 {
   "dataset_id": "statcan_14100287_labour_force_characteristics_monthly",
   "dataset_name": "Labour force characteristics, monthly, seasonally adjusted and trend-cycle",
+  "description": "Labour force characteristics, monthly, seasonally adjusted and trend-cycle",
+  "source_organization": "Statistics Canada",
   "source_url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=1410028701",
   "source_table_or_series_id": "14-10-0287-01",
-  "description": "Labour force characteristics, monthly, seasonally adjusted and trend-cycle",
+  "licence": {
+    "name": "Statistics Canada Open Licence",
+    "url": "https://www.statcan.gc.ca/en/terms-conditions/open-licence"
+  },
+  "access": "Public. Free download, no account or API key required.",
+  "retrieval_method": "Statistics Canada Web Data Service (WDS) REST API: getFullTableDownloadCSV returns the full-table CSV zip (data and table description); getCubeMetadata returns the title, release time, frequency and expected number of data points.",
+  "retrieval_script": "scripts/acquisition/statcan/download_statcan_table.py",
   "subject_category": "labour",
-  "geography": "11 geographies in source; processed subset: Canada",
+  "geography": "11 geographies in source; processed file: Canada",
   "frequency": "monthly",
+  "frequency_basis": "declared by Statistics Canada",
   "observation_start": "1976-01-01",
   "observation_end": "2026-09-01",
   "units": "Percent; Persons in thousands",
-  "retrieval_script": "scripts/acquisition/statcan/download_statcan_table.py",
-  "last_retrieved": "2026-10-10T14:30:02-04:00",
-  "raw_file_location": "raw/statcan/statcan_14100287_labour_force_characteristics_monthly/statcan_14100287_labour_force_characteristics_monthly_20261010.csv",
+  "last_retrieved": "2026-10-18T12:19:24-04:00",
+  "raw_file_location": "raw/statcan/statcan_14100287_labour_force_characteristics_monthly/statcan_14100287_labour_force_characteristics_monthly_20261018.csv",
   "processed_file_location": "processed/statcan/statcan_14100287_labour_force_characteristics_monthly/statcan_14100287_labour_force_characteristics_monthly.csv",
   "update_frequency": null,
   "source_last_updated": "2026-10-09T08:30:00-04:00",
   "checksum": "sha256:f36e9919e4967c292ec098be3896ba0d47916782117e2139d217cec87b548019",
-  "quality_notes": "5475519 rows in raw file; 633969 rows in processed subset (geography filter: Canada); 175958 observations without a value; 0 unrecognized date formats; frequency detected from reference-period spacing."
+  "schema_version": 1,
+  "schema": {
+    "columns": [
+      "REF_DATE",
+      "GEO",
+      "DGUID",
+      "Labour force characteristics",
+      "Gender",
+      "Age group",
+      "Statistics",
+      "Data type",
+      "UOM",
+      "UOM_ID",
+      "SCALAR_FACTOR",
+      "SCALAR_ID",
+      "VECTOR",
+      "COORDINATE",
+      "VALUE",
+      "STATUS",
+      "SYMBOL",
+      "TERMINATED",
+      "DECIMALS"
+    ],
+    "dimension_columns": [
+      "Labour force characteristics",
+      "Gender",
+      "Age group",
+      "Statistics",
+      "Data type"
+    ],
+    "units": [
+      "Percent",
+      "Persons in thousands"
+    ]
+  },
+  "quality_notes": "5475519 rows in raw file; 633969 rows in processed file (Canada). Missing values: 175958 of 633969 observations have no value (27.8%): 175958 .. (not available for the reference period). Validation passed.",
+  "validation": {
+    "status": "passed",
+    "run_at": "2026-10-18T12:19:24-04:00",
+    "validator": "scripts/validation/validate_statcan_dataset.py",
+    "checks": [
+      {
+        "check": "schema",
+        "status": "pass",
+        "detail": "no earlier schema on record; this retrieval is the baseline"
+      },
+      {
+        "check": "row_count",
+        "status": "pass",
+        "detail": "5475519 rows received, matching the 5475519 data points Statistics Canada reports"
+      },
+      {
+        "check": "geography",
+        "status": "pass",
+        "detail": "kept ['Canada'] out of 11 geographies in the source",
+        "requested": "Canada",
+        "kept": 1
+      },
+      {
+        "check": "dates",
+        "status": "pass",
+        "detail": "every reference period converted to an ISO date"
+      },
+      {
+        "check": "numeric_values",
+        "status": "pass",
+        "detail": "every non-empty VALUE is a number"
+      },
+      {
+        "check": "terminated_series",
+        "status": "pass",
+        "detail": "no terminated series",
+        "terminated_series": 0
+      },
+      {
+        "check": "processed_layout",
+        "status": "pass",
+        "detail": "633969 rows with the standard columns"
+      },
+      {
+        "check": "duplicates",
+        "status": "pass",
+        "detail": "no duplicate observations",
+        "exact_duplicates_removed": 0,
+        "conflicting_rows": 0
+      },
+      {
+        "check": "missing_values",
+        "status": "pass",
+        "detail": "175958 of 633969 observations have no value (27.8%): 175958 .. (not available for the reference period)",
+        "missing": 175958,
+        "missing_by_status": {
+          "..": 175958
+        },
+        "unexplained": 0,
+        "contradicting": 0
+      },
+      {
+        "check": "date_gaps",
+        "status": "pass",
+        "detail": "no gaps in the 609 monthly periods from 1976-01 to 2026-09",
+        "table_missing_periods": [],
+        "series_with_gaps": 0
+      }
+    ]
+  },
+  "retrieval_history": [
+    {
+      "retrieved": "2026-10-10T14:30:02-04:00",
+      "checksum": "sha256:f36e9919e4967c292ec098be3896ba0d47916782117e2139d217cec87b548019",
+      "raw_file": "raw/statcan/statcan_14100287_labour_force_characteristics_monthly/statcan_14100287_labour_force_characteristics_monthly_20261010.csv",
+      "source_last_updated": "2026-10-09T08:30:00-04:00",
+      "data_changed": null
+    },
+    {
+      "retrieved": "2026-10-18T12:19:24-04:00",
+      "checksum": "sha256:f36e9919e4967c292ec098be3896ba0d47916782117e2139d217cec87b548019",
+      "raw_file": "raw/statcan/statcan_14100287_labour_force_characteristics_monthly/statcan_14100287_labour_force_characteristics_monthly_20261018.csv",
+      "source_last_updated": "2026-10-09T08:30:00-04:00",
+      "data_changed": false,
+      "schema_version": 1,
+      "validation_status": "passed"
+    }
+  ],
+  "ai_use_note": "The acquisition, processing and validation code was written with the help of an AI coding assistant (Claude, Anthropic) and reviewed by the project team. No data values were generated, edited or imputed by AI: raw files are stored exactly as published by Statistics Canada, and the processed file is produced by the deterministic code named in retrieval_script. The automated checks recorded under validation were run on this retrieval."
 }
