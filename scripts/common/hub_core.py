@@ -178,6 +178,33 @@ def script_location(script: str | Path, root: Path) -> str:
         return here.name
 
 
+# Fields a source catalogue can carry for each dataset, copied into its metadata record as they are
+# (see the README, "Common metadata"). Empty cells become null.
+GOVERNANCE_FIELDS = ["update_frequency", "refresh_schedule", "revision_policy", "priority", "known_limitations"]
+
+
+def governance_from(row: dict) -> dict:
+    return {name: (row.get(name) or "").strip() for name in GOVERNANCE_FIELDS}
+
+
+def reproducibility_rating(history: list[dict]) -> dict:
+    """'Confirmed High' once two retrievals produced byte-identical raw data (same checksum), else 'Potential High'.
+
+    This is the rule from the team's source inventory standard (W1-AAH-02): reproducibility is confirmed
+    by two verified repeat downloads with matching hashes.
+    """
+    if not history:
+        return {"rating": "Potential High", "basis": "no retrieval on record yet"}
+    latest = history[-1]["checksum"]
+    matching = [h for h in history if h.get("checksum") == latest]
+    if len(matching) >= 2:
+        days = sorted({(h.get("retrieved") or "")[:10] for h in matching})
+        return {"rating": "Confirmed High",
+                "basis": f"{len(matching)} retrievals produced the same raw data ({latest[:19]}...), on {', '.join(days)}"}
+    return {"rating": "Potential High",
+            "basis": "the latest raw data has been retrieved once; a repeat download with the same checksum confirms it"}
+
+
 def quality_summary(rows_raw: int, rows_processed: int, coverage: str, results: list[dict], status: str) -> str:
     """One readable paragraph for the quality_notes field. The full results are under validation."""
     by_name = {r["check"]: r for r in results}
@@ -245,12 +272,13 @@ def open_dataset(root: Path, source_code: str, dataset_id: str, stamp: str, raw_
 def finish_dataset(ds: Dataset, *, processed, frequency: str, results: list[dict], now: datetime,
                    record: dict, source_last_updated: str | None, schema: dict, schema_version: int,
                    rows_raw: int, coverage: str, validator: str, ai_use_note: str,
-                   missing_status: dict[str, str] | None = None, update_frequency: str | None = None) -> dict:
+                   missing_status: dict[str, str] | None = None, governance: dict | None = None) -> dict:
     """Run the common checks, then write the processed file and the metadata record.
 
     results holds the adapter's own checks, already run. record holds the publisher-specific fields
     of the metadata record, in order (dataset_id through units); the retrieval, quality and history
-    fields are added here so every publisher's record has the same shape.
+    fields are added here so every publisher's record has the same shape. governance holds the
+    catalogue's GOVERNANCE_FIELDS for the dataset.
     If any check fails, AcquisitionError is raised and the previous processed file and metadata stay as they were.
     """
     processed, processed_results = checks.check_processed(processed, frequency, missing_status)
@@ -276,17 +304,24 @@ def finish_dataset(ds: Dataset, *, processed, frequency: str, results: list[dict
         "schema_version": schema_version,
         "validation_status": status,
     }]
+    governance = {name: ((governance or {}).get(name) or None) for name in GOVERNANCE_FIELDS}
     metadata = dict(record)
     metadata.update({
         "last_retrieved": iso(now),
         "raw_file_location": ds.relative(ds.raw_path),
         "processed_file_location": ds.relative(ds.processed_path),
-        "update_frequency": update_frequency,
+        "update_frequency": governance["update_frequency"],
+        "refresh_schedule": governance["refresh_schedule"],
+        "revision_policy": governance["revision_policy"],
         "source_last_updated": source_last_updated,
         "checksum": ds.checksum,
+        "primary_key": checks.OBSERVATION_KEY,
+        "reproducibility_rating": reproducibility_rating(history),
         "schema_version": schema_version,
         "schema": schema,
         "quality_notes": quality_summary(rows_raw, len(processed), coverage, results, status),
+        "known_limitations": governance["known_limitations"],
+        "priority": governance["priority"],
         "validation": {
             "status": status,
             "run_at": iso(now),

@@ -132,3 +132,28 @@ def test_finish_records_revisions_against_the_previous_processed_file(tmp_path):
     result = finish(hub_core.open_dataset(tmp_path, "test", "test_x_s_monthly", "20261025", b"b"),
                     frame(["2026-08-01", "2026-09-01"], values=[1.0, 2.5]))
     assert any(w.startswith("revisions: 1 values revised") for w in result["warnings"])
+
+
+# ----------------------------------------------------------------------------
+# Fields added for the team's metadata standards (W3-SOL-03)
+# ----------------------------------------------------------------------------
+
+def test_reproducibility_is_confirmed_by_two_identical_retrievals(tmp_path):
+    finish(hub_core.open_dataset(tmp_path, "test", "test_x_s_monthly", "20261024", b"a"), frame(["2026-09-01"]))
+    meta = json.loads((tmp_path / "metadata" / "test_x_s_monthly.json").read_text(encoding="utf-8"))
+    assert meta["reproducibility_rating"]["rating"] == "Potential High"
+    finish(hub_core.open_dataset(tmp_path, "test", "test_x_s_monthly", "20261025", b"a"), frame(["2026-09-01"]),
+           now=NOW + timedelta(days=1))
+    meta = json.loads((tmp_path / "metadata" / "test_x_s_monthly.json").read_text(encoding="utf-8"))
+    assert meta["reproducibility_rating"]["rating"] == "Confirmed High"
+    assert "2026-10-24, 2026-10-25" in meta["reproducibility_rating"]["basis"]
+
+
+def test_catalogue_fields_are_copied_and_blanks_become_null(tmp_path):
+    governance = hub_core.governance_from({"update_frequency": " monthly ", "priority": "", "extra": "ignored"})
+    finish(hub_core.open_dataset(tmp_path, "test", "test_x_s_monthly", "20261024", b"a"), frame(["2026-09-01"]),
+           governance=governance)
+    meta = json.loads((tmp_path / "metadata" / "test_x_s_monthly.json").read_text(encoding="utf-8"))
+    assert meta["update_frequency"] == "monthly"
+    assert all(meta[f] is None for f in ["refresh_schedule", "revision_policy", "priority", "known_limitations"])
+    assert meta["primary_key"] == ["date", "geography", "series"] and "extra" not in meta

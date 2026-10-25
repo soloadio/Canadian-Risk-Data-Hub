@@ -20,6 +20,8 @@ THE CATALOGUE (sources/statcan_tables.csv)
     geography     Optional. Which place to keep in the processed file.
                   Empty means Canada. Use all to keep every place, or separate
                   several places with ; (e.g. Ontario;Quebec).
+    update_frequency, refresh_schedule, revision_policy, priority, known_limitations
+                  Optional. Copied into the metadata record as written (see the README, "Common metadata").
     Leave optional columns empty, but keep the commas.
 
 TO RUN ONE TABLE WITHOUT THE CATALOGUE
@@ -82,6 +84,7 @@ LICENCE = {
     "url": "https://www.statcan.gc.ca/en/terms-conditions/open-licence",
 }
 ACCESS = "Public. Free download, no account or API key required."
+ACCESS_FORMAT = "CSV in a ZIP archive (full-table download from a REST API)"
 AI_USE_NOTE = (
     "The acquisition, processing and validation code was written with the help of an AI coding assistant "
     "(Claude, Anthropic) and reviewed by the project team. No data values were generated, edited or imputed "
@@ -156,6 +159,7 @@ def load_catalogue(path: Path) -> list[dict]:
                 "subject": row.get("subject", ""),
                 "category": row.get("category", ""),
                 "geography": row.get("geography", ""),
+                **hub_core.governance_from(row),
             })
     return tables
 
@@ -418,6 +422,7 @@ def acquire_table(table: dict, root: Path, session, default_geography: str, now:
         "source_table_or_series_id": pretty_table_number(pid),
         "licence": LICENCE,
         "access": ACCESS,
+        "access_format": ACCESS_FORMAT,
         "retrieval_method": RETRIEVAL_METHOD,
         "retrieval_script": hub_core.script_location(__file__, root),
         "subject_category": category,
@@ -434,7 +439,7 @@ def acquire_table(table: dict, root: Path, session, default_geography: str, now:
         ds, processed=processed, frequency=frequency, results=results, now=now, record=record,
         source_last_updated=release_time_with_offset(cube.get("releaseTime")), schema=schema,
         schema_version=schema_version, rows_raw=info["rows_raw"], coverage=coverage, validator=VALIDATOR,
-        ai_use_note=AI_USE_NOTE, missing_status=checks.MISSING_STATUS,
+        ai_use_note=AI_USE_NOTE, missing_status=checks.MISSING_STATUS, governance=table,
     )
 
 
@@ -458,13 +463,22 @@ def main(argv=None, session=None, now=None) -> int:
                              'separate several with ";").')
     args = parser.parse_args(argv)
 
+    catalogue_path = args.catalogue or (args.repo_root / CATALOGUE_RELATIVE_PATH)
     if args.table:
         tables = args.table
+        # A table that is also in the catalogue keeps the catalogue's descriptive fields.
+        if catalogue_path.exists():
+            try:
+                known = {t["product_id"]: t for t in load_catalogue(catalogue_path)}
+            except ValueError:
+                known = {}
+            for table in tables:
+                for name in hub_core.GOVERNANCE_FIELDS:
+                    table.setdefault(name, known.get(table["product_id"], {}).get(name, ""))
     else:
-        catalogue_path = args.catalogue or (args.repo_root / CATALOGUE_RELATIVE_PATH)
         if not catalogue_path.exists():
             print(f"No tables given and no catalogue found at {catalogue_path}.\n"
-                  f"Create it (header: table_number,subject,category,geography) or pass --table.", file=sys.stderr)
+                  f"Create it (header: table_number,subject,category,geography,...) or pass --table.", file=sys.stderr)
             return 2
         try:
             tables = load_catalogue(catalogue_path)

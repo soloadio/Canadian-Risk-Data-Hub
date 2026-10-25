@@ -234,3 +234,15 @@ def test_validator_command_line_rechecks_files_on_disk(tmp_path, capsys):
     run(tmp_path, FakeStatCan(to_csv(make_rows())))
     assert checks.main(["--all", "--repo-root", str(tmp_path)]) == 0
     assert "date_gaps" in capsys.readouterr().out
+
+
+def test_one_off_table_run_keeps_the_catalogue_fields(tmp_path):
+    (tmp_path / "sources").mkdir()
+    (tmp_path / "sources" / "statcan_tables.csv").write_text(
+        "table_number,subject,category,geography,update_frequency,refresh_schedule,revision_policy,priority,known_limitations\n"
+        "11-10-0222-01,household_spending,household,,biennial,after each release,,,survey became biennial\n",
+        encoding="utf-8")
+    assert run(tmp_path, FakeStatCan(to_csv(make_rows()))) == 0
+    meta = metadata(tmp_path)
+    assert meta["update_frequency"] == "biennial" and meta["known_limitations"] == "survey became biennial"
+    assert meta["access_format"].startswith("CSV")

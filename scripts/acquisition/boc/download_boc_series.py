@@ -10,9 +10,9 @@ HOW TO USE
 THE CATALOGUE (sources/boc_series.csv)
     One row per dataset. Keep the first line as it is:
 
-        series_ids,id_part,subject,name,category,update_frequency
-        V39079,,policy_rate,,interest_rates,business daily
-        BD.CDN.2YR.DQ.YLD;BD.CDN.10YR.DQ.YLD,bdcdnyld,bond_yields,Benchmark bond yields,interest_rates,business daily
+        series_ids,id_part,subject,name,category,update_frequency,refresh_schedule,revision_policy,priority,known_limitations
+        V39079,,policy_rate,,interest_rates,business daily,11:30 ET business days,Not revised,high,
+        BD.CDN.2YR.DQ.YLD;BD.CDN.10YR.DQ.YLD,bdcdnyld,bond_yields,Benchmark bond yields,interest_rates,...
 
     series_ids        Required. One Valet series name, or several separated by ; to keep them in one dataset.
     id_part           The publisher-ID part of the dataset ID. Required when a row has several series;
@@ -20,7 +20,8 @@ THE CATALOGUE (sources/boc_series.csv)
     subject           Required. One or two words for the dataset ID, e.g. policy_rate.
     name              Optional for one series (the Bank's label is used); recommended for several.
     category          Optional. A grouping label, e.g. interest_rates.
-    update_frequency  Optional. When the Bank publishes, in words; copied into the metadata record.
+    update_frequency, refresh_schedule, revision_policy, priority, known_limitations
+                      Optional. Copied into the metadata record as written (see the README, "Common metadata").
 
 TO RUN SOME DATASETS ONLY
     python scripts/acquisition/boc/download_boc_series.py --only policy_rate --only corra
@@ -64,7 +65,7 @@ SOURCE_CODE = "boc"
 CATALOGUE_RELATIVE_PATH = Path("sources") / "boc_series.csv"
 HEADERS = {"User-Agent": "rai-risk-data-hub/0.3 (student proof of concept)"}
 VALIDATOR = "scripts/validation/hub_checks.py"
-CATALOGUE_COLUMNS = ["series_ids", "id_part", "subject", "name", "category", "update_frequency"]
+CATALOGUE_COLUMNS = ["series_ids", "id_part", "subject", "name", "category", *hub_core.GOVERNANCE_FIELDS]
 
 # Provenance written into every metadata record (see the README, "Common metadata").
 SOURCE_ORGANIZATION = "Bank of Canada"
@@ -78,6 +79,7 @@ LICENCE_CONDITIONS = (
     "Bank of Canada exchange rates are for statistical and analytical purposes only, not for executing trades."
 )
 ACCESS = "Public. Free, no account or API key required. The Bank's terms prohibit circumventing its request limits."
+ACCESS_FORMAT = "JSON from a REST API (Valet)"
 AI_USE_NOTE = (
     "The acquisition, processing and validation code was written with the help of an AI coding assistant "
     "(Claude, Anthropic) and reviewed by the project team. No data values were generated, edited or imputed "
@@ -126,7 +128,7 @@ def load_catalogue(path: Path) -> list[dict]:
                 "subject": subject,
                 "name": row.get("name", ""),
                 "category": row.get("category", ""),
-                "update_frequency": row.get("update_frequency", ""),
+                **hub_core.governance_from(row),
             })
     return datasets
 
@@ -341,6 +343,7 @@ def acquire_dataset(entry: dict, root: Path, session, now: datetime) -> dict:
             "conditions": LICENCE_CONDITIONS,
         },
         "access": ACCESS,
+        "access_format": ACCESS_FORMAT,
         "retrieval_method": RETRIEVAL_METHOD,
         "retrieval_script": hub_core.script_location(__file__, root),
         "subject_category": slug(entry["category"]) or "uncategorized",
@@ -355,7 +358,7 @@ def acquire_dataset(entry: dict, root: Path, session, now: datetime) -> dict:
         ds, processed=processed, frequency=frequency, results=results, now=now, record=record,
         source_last_updated=None, schema=schema, schema_version=schema_version, rows_raw=info["rows_raw"],
         coverage="Canada", validator=VALIDATOR, ai_use_note=AI_USE_NOTE,
-        update_frequency=entry["update_frequency"] or None,
+        governance=entry,
     )
 
 
