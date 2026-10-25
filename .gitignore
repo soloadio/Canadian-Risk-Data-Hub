@@ -13,8 +13,9 @@ Thumbs.db
 .env
 
 # Large data files (the script and metadata make these reproducible)
-# Raw and processed CSVs are excluded from Git:
+# Raw and processed data files are excluded from Git:
 raw/**/*.csv
+raw/**/*.json
 processed/**/*.csv
 # Temporary files left by an interrupted download
 *.partial

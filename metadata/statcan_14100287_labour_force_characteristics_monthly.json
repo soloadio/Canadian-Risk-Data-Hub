@@ -10,6 +10,7 @@
     "url": "https://www.statcan.gc.ca/en/terms-conditions/open-licence"
   },
   "access": "Public. Free download, no account or API key required.",
+  "access_format": "CSV in a ZIP archive (full-table download from a REST API)",
   "retrieval_method": "Statistics Canada Web Data Service (WDS) REST API: getFullTableDownloadCSV returns the full-table CSV zip (data and table description); getCubeMetadata returns the title, release time, frequency and expected number of data points.",
   "retrieval_script": "scripts/acquisition/statcan/download_statcan_table.py",
   "subject_category": "labour",
@@ -19,12 +20,23 @@
   "observation_start": "1976-01-01",
   "observation_end": "2026-09-01",
   "units": "Percent; Persons in thousands",
-  "last_retrieved": "2026-10-18T12:19:24-04:00",
-  "raw_file_location": "raw/statcan/statcan_14100287_labour_force_characteristics_monthly/statcan_14100287_labour_force_characteristics_monthly_20261018.csv",
+  "last_retrieved": "2026-10-24T22:42:12-04:00",
+  "raw_file_location": "raw/statcan/statcan_14100287_labour_force_characteristics_monthly/statcan_14100287_labour_force_characteristics_monthly_20261024.csv",
   "processed_file_location": "processed/statcan/statcan_14100287_labour_force_characteristics_monthly/statcan_14100287_labour_force_characteristics_monthly.csv",
-  "update_frequency": null,
+  "update_frequency": "monthly (Labour Force Survey, released early in the following month at 08:30 ET)",
+  "refresh_schedule": "on Labour Force Survey release days, after 08:30 ET",
+  "revision_policy": null,
   "source_last_updated": "2026-10-09T08:30:00-04:00",
   "checksum": "sha256:f36e9919e4967c292ec098be3896ba0d47916782117e2139d217cec87b548019",
+  "primary_key": [
+    "date",
+    "geography",
+    "series"
+  ],
+  "reproducibility_rating": {
+    "rating": "Confirmed High",
+    "basis": "3 retrievals produced the same raw data (sha256:f36e9919e496...), on 2026-10-10, 2026-10-18, 2026-10-24"
+  },
   "schema_version": 1,
   "schema": {
     "columns": [
@@ -61,15 +73,17 @@
     ]
   },
   "quality_notes": "5475519 rows in raw file; 633969 rows in processed file (Canada). Missing values: 175958 of 633969 observations have no value (27.8%): 175958 .. (not available for the reference period). Validation passed.",
+  "known_limitations": "The full table is about 1.2 GB raw. Seasonally adjusted and trend-cycle series are published together; choose series by their label",
+  "priority": null,
   "validation": {
     "status": "passed",
-    "run_at": "2026-10-18T12:19:24-04:00",
+    "run_at": "2026-10-24T22:42:12-04:00",
     "validator": "scripts/validation/validate_statcan_dataset.py",
     "checks": [
       {
         "check": "schema",
         "status": "pass",
-        "detail": "no earlier schema on record; this retrieval is the baseline"
+        "detail": "same columns and dimensions as the previous retrieval (version 1)"
       },
       {
         "check": "row_count",
@@ -128,6 +142,21 @@
         "detail": "no gaps in the 609 monthly periods from 1976-01 to 2026-09",
         "table_missing_periods": [],
         "series_with_gaps": 0
+      },
+      {
+        "check": "revisions",
+        "status": "pass",
+        "detail": "no earlier value changed or disappeared; 0 new observations",
+        "changed_values": 0,
+        "removed_observations": 0,
+        "new_observations": 0
+      },
+      {
+        "check": "freshness",
+        "status": "pass",
+        "detail": "latest observation is 2026-09-01 (53 days old, limit 75)",
+        "age_days": 53,
+        "limit_days": 75
       }
     ]
   },
@@ -143,6 +172,15 @@
       "retrieved": "2026-10-18T12:19:24-04:00",
       "checksum": "sha256:f36e9919e4967c292ec098be3896ba0d47916782117e2139d217cec87b548019",
       "raw_file": "raw/statcan/statcan_14100287_labour_force_characteristics_monthly/statcan_14100287_labour_force_characteristics_monthly_20261018.csv",
+      "source_last_updated": "2026-10-09T08:30:00-04:00",
+      "data_changed": false,
+      "schema_version": 1,
+      "validation_status": "passed"
+    },
+    {
+      "retrieved": "2026-10-24T22:42:12-04:00",
+      "checksum": "sha256:f36e9919e4967c292ec098be3896ba0d47916782117e2139d217cec87b548019",
+      "raw_file": "raw/statcan/statcan_14100287_labour_force_characteristics_monthly/statcan_14100287_labour_force_characteristics_monthly_20261024.csv",
       "source_last_updated": "2026-10-09T08:30:00-04:00",
       "data_changed": false,
       "schema_version": 1,

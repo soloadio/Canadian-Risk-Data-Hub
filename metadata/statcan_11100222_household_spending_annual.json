@@ -10,6 +10,7 @@
     "url": "https://www.statcan.gc.ca/en/terms-conditions/open-licence"
   },
   "access": "Public. Free download, no account or API key required.",
+  "access_format": "CSV in a ZIP archive (full-table download from a REST API)",
   "retrieval_method": "Statistics Canada Web Data Service (WDS) REST API: getFullTableDownloadCSV returns the full-table CSV zip (data and table description); getCubeMetadata returns the title, release time, frequency and expected number of data points.",
   "retrieval_script": "scripts/acquisition/statcan/download_statcan_table.py",
   "subject_category": "household",
@@ -19,12 +20,23 @@
   "observation_start": "2010-01-01",
   "observation_end": "2023-01-01",
   "units": "Dollars",
-  "last_retrieved": "2026-10-18T12:19:24-04:00",
-  "raw_file_location": "raw/statcan/statcan_11100222_household_spending_annual/statcan_11100222_household_spending_annual_20261018.csv",
+  "last_retrieved": "2026-10-24T22:42:12-04:00",
+  "raw_file_location": "raw/statcan/statcan_11100222_household_spending_annual/statcan_11100222_household_spending_annual_20261024.csv",
   "processed_file_location": "processed/statcan/statcan_11100222_household_spending_annual/statcan_11100222_household_spending_annual.csv",
-  "update_frequency": null,
+  "update_frequency": "biennial (Survey of Household Spending, every second year since 2017)",
+  "refresh_schedule": "after each Survey of Household Spending release, 08:30 ET",
+  "revision_policy": null,
   "source_last_updated": "2026-09-18T08:30:00-04:00",
   "checksum": "sha256:50e9f0511225ae5509689128a87846c5ff90fe27f6ff63c20767d3c238d7fd5c",
+  "primary_key": [
+    "date",
+    "geography",
+    "series"
+  ],
+  "reproducibility_rating": {
+    "rating": "Confirmed High",
+    "basis": "3 retrievals produced the same raw data (sha256:50e9f0511225...), on 2026-10-10, 2026-10-18, 2026-10-24"
+  },
   "schema_version": 1,
   "schema": {
     "columns": [
@@ -53,16 +65,18 @@
       "Dollars"
     ]
   },
-  "quality_notes": "44265 rows in raw file; 3405 rows in processed file (Canada). Missing values: 108 of 3405 observations have no value (3.2%): 87 F (too unreliable to be published), 21 .. (not available for the reference period). Validation passed with warnings. Warnings: date_gaps: 3 annual periods have no data in the whole table: ['2018', '2020', '2022']; 1 series skip periods inside their own date range (1 periods in total), e.g. [\"Canada / Average expenditure per household | Collectors' items (e.g. stamps, coins)\"]",
+  "quality_notes": "44265 rows in raw file; 3405 rows in processed file (Canada). Missing values: 108 of 3405 observations have no value (3.2%): 87 F (too unreliable to be published), 21 .. (not available for the reference period). Validation passed with warnings. Warnings: date_gaps: 3 annual periods have no data in the whole table: ['2018', '2020', '2022']; 1 series skip periods inside their own date range (1 periods in total), e.g. [\"Canada / Average expenditure per household | Collectors' items (e.g. stamps, coins)\"] | freshness: latest observation is 2023-01-01, 1392 days old; annual data is normally no more than 913 days old. Check whether the source still updates",
+  "known_limitations": "The survey became biennial after 2017, so 2018, 2020 and 2022 are absent from the table. Values are in current dollars (not adjusted for inflation)",
+  "priority": null,
   "validation": {
     "status": "passed_with_warnings",
-    "run_at": "2026-10-18T12:19:24-04:00",
+    "run_at": "2026-10-24T22:42:12-04:00",
     "validator": "scripts/validation/validate_statcan_dataset.py",
     "checks": [
       {
         "check": "schema",
         "status": "pass",
-        "detail": "no earlier schema on record; this retrieval is the baseline"
+        "detail": "same columns and dimensions as the previous retrieval (version 1)"
       },
       {
         "check": "row_count",
@@ -126,6 +140,21 @@
           "2022"
         ],
         "series_with_gaps": 1
+      },
+      {
+        "check": "revisions",
+        "status": "pass",
+        "detail": "no earlier value changed or disappeared; 0 new observations",
+        "changed_values": 0,
+        "removed_observations": 0,
+        "new_observations": 0
+      },
+      {
+        "check": "freshness",
+        "status": "warn",
+        "detail": "latest observation is 2023-01-01, 1392 days old; annual data is normally no more than 913 days old. Check whether the source still updates",
+        "age_days": 1392,
+        "limit_days": 913
       }
     ]
   },
@@ -141,6 +170,15 @@
       "retrieved": "2026-10-18T12:19:24-04:00",
       "checksum": "sha256:50e9f0511225ae5509689128a87846c5ff90fe27f6ff63c20767d3c238d7fd5c",
       "raw_file": "raw/statcan/statcan_11100222_household_spending_annual/statcan_11100222_household_spending_annual_20261018.csv",
+      "source_last_updated": "2026-09-18T08:30:00-04:00",
+      "data_changed": false,
+      "schema_version": 1,
+      "validation_status": "passed_with_warnings"
+    },
+    {
+      "retrieved": "2026-10-24T22:42:12-04:00",
+      "checksum": "sha256:50e9f0511225ae5509689128a87846c5ff90fe27f6ff63c20767d3c238d7fd5c",
+      "raw_file": "raw/statcan/statcan_11100222_household_spending_annual/statcan_11100222_household_spending_annual_20261024.csv",
       "source_last_updated": "2026-09-18T08:30:00-04:00",
       "data_changed": false,
       "schema_version": 1,
