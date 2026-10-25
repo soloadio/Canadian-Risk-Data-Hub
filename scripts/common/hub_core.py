@@ -254,7 +254,11 @@ def finish_dataset(ds: Dataset, *, processed, frequency: str, results: list[dict
     If any check fails, AcquisitionError is raised and the previous processed file and metadata stay as they were.
     """
     processed, processed_results = checks.check_processed(processed, frequency, missing_status)
-    results = results + processed_results
+    previous_processed = checks.read_processed(ds.processed_path) if ds.processed_path.exists() else None
+    results = results + processed_results + [
+        checks.check_revisions(previous_processed, processed),
+        checks.check_freshness(record.get("observation_end"), frequency, now),
+    ]
     status = checks.overall_status(results)
     if status == "failed":
         raise AcquisitionError("validation failed, processed file and metadata left unchanged "

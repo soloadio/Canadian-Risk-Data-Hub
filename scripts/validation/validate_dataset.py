@@ -15,6 +15,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+from datetime import datetime
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -34,14 +35,16 @@ def missing_status_for(source: str) -> dict[str, str]:
     return {}
 
 
-def validate_dataset(metadata_path: Path, root: Path) -> tuple[str, list[dict]]:
+def validate_dataset(metadata_path: Path, root: Path, now: datetime | None = None) -> tuple[str, list[dict]]:
     metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
     processed_path = root / metadata["processed_file_location"]
     if not processed_path.exists():
         return "skipped", [checks.check("processed_file", checks.WARN,
                                         f"{processed_path} not found; run the acquisition script first")]
-    _, results = checks.check_processed(checks.read_processed(processed_path), metadata.get("frequency", ""),
+    frequency = metadata.get("frequency", "")
+    _, results = checks.check_processed(checks.read_processed(processed_path), frequency,
                                         missing_status_for(source_of(metadata["dataset_id"])))
+    results.append(checks.check_freshness(metadata.get("observation_end"), frequency, now or datetime.now().astimezone()))
     return checks.overall_status(results), results
 
 

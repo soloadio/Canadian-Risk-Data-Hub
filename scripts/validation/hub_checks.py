@@ -9,6 +9,7 @@ Each check returns a dict: {"check": name, "status": "pass" | "warn" | "fail", "
 """
 from __future__ import annotations
 
+from datetime import datetime
 from pathlib import Path
 
 import pandas as pd
@@ -19,6 +20,14 @@ PROCESSED_COLUMNS = ["date", "geography", "series", "value", "unit", "source", "
 SERIES_KEY = ["geography", "series"]
 OBSERVATION_KEY = ["date", "geography", "series"]
 EXAMPLES = 5  # how many examples to keep in a check's detail
+
+# Daily, weekly and biweekly data: a series that goes longer than this without an observation has a gap
+# (a week covers weekends and the longest run of Canadian statutory holidays).
+MAX_GAP_DAYS = {"daily": 7, "weekly": 15, "biweekly": 29}
+# How old the latest observation may be, in days, before the data counts as stale: one period plus
+# the usual publication lag (e.g. monthly data appears about 5-6 weeks after the month starts).
+MAX_AGE_DAYS = {"daily": 7, "weekly": 21, "biweekly": 35, "monthly": 75, "quarterly": 200,
+                "semiannual": 380, "annual": 913}
 
 
 def check(name: str, status: str, detail: str, **data) -> dict:
@@ -164,6 +173,8 @@ def check_date_gaps(processed: pd.DataFrame, frequency: str) -> dict:
     survey that moved to every second year). A period missing from one series only means a row is
     absent, which Statistics Canada normally avoids by publishing the row with a '..' status.
     """
+    if frequency in MAX_GAP_DAYS:
+        return check_observation_spacing(processed, frequency)
     index = period_index(processed["date"], frequency)
     if index is None:
         return check("date_gaps", PASS, f"not checked for {frequency} data")
@@ -199,6 +210,86 @@ def check_date_gaps(processed: pd.DataFrame, frequency: str) -> dict:
     return check("date_gaps", WARN, "; ".join(details),
                  table_missing_periods=[period_label(p, frequency) for p in table_missing],
                  series_with_gaps=int(len(series_with_gaps)))
+
+
+def check_observation_spacing(processed: pd.DataFrame, frequency: str) -> dict:
+    """Date gaps for daily, weekly and biweekly data, where calendars (weekends, holidays) make periods uneven.
+
+    Instead of listing every missing period, look for stretches longer than MAX_GAP_DAYS without an
+    observation inside each series' own date range.
+    """
+    limit = MAX_GAP_DAYS[frequency]
+    dates = pd.to_datetime(processed["date"], format="%Y-%m-%d", errors="coerce")
+    frame = pd.DataFrame({"date": dates, "geography": processed["geography"], "series": processed["series"]})
+    frame = frame.dropna(subset=["date"]).drop_duplicates().sort_values([*SERIES_KEY, "date"])
+    if frame.empty:
+        return check("date_gaps", WARN, "no recognizable dates to check")
+    frame["gap"] = frame.groupby(SERIES_KEY, sort=False)["date"].diff().dt.days
+    gaps = frame[frame["gap"] > limit]
+    if gaps.empty:
+        return check("date_gaps", PASS, f"no series goes more than {limit} days without an observation "
+                     f"({frame['date'].min():%Y-%m-%d} to {frame['date'].max():%Y-%m-%d})",
+                     longest_gap_days=int(frame["gap"].max() or 0), series_with_gaps=0)
+    worst = gaps.sort_values("gap", ascending=False).head(EXAMPLES)
+    examples = [f"{r.series}: {int(r.gap)} days to {r.date:%Y-%m-%d}" for r in worst.itertuples()]
+    affected = gaps[SERIES_KEY].drop_duplicates()
+    return check("date_gaps", WARN, f"{len(gaps)} stretches of more than {limit} days without an observation in "
+                 f"{len(affected)} series, e.g. {examples}", longest_gap_days=int(gaps["gap"].max()),
+                 series_with_gaps=int(len(affected)))
+
+
+def check_freshness(observation_end: str | None, frequency: str, now: datetime) -> dict:
+    """Is the latest observation as recent as the frequency and the usual publication lag allow?
+
+    A warning means either the publisher has not released newer data (e.g. a survey that moved to
+    every second year) or the source stopped updating; either way the dataset should be looked at.
+    """
+    limit = MAX_AGE_DAYS.get(frequency)
+    if limit is None or not observation_end:
+        return check("freshness", PASS, f"not checked for {frequency or 'unknown'} data")
+    latest = pd.to_datetime(observation_end, format="%Y-%m-%d", errors="coerce")
+    if pd.isna(latest):
+        return check("freshness", WARN, f"latest observation {observation_end!r} is not an ISO date")
+    age = (pd.Timestamp(now.date()) - latest).days
+    if age > limit:
+        return check("freshness", WARN, f"latest observation is {observation_end}, {age} days old; {frequency} data "
+                     f"is normally no more than {limit} days old. Check whether the source still updates",
+                     age_days=age, limit_days=limit)
+    return check("freshness", PASS, f"latest observation is {observation_end} ({age} day{'' if age == 1 else 's'} old, "
+                 f"limit {limit})",
+                 age_days=age, limit_days=limit)
+
+
+def check_revisions(previous: pd.DataFrame | None, processed: pd.DataFrame) -> dict:
+    """Compare with the previous processed file: values that changed and observations that disappeared.
+
+    Publishers revise data, so a change is a warning, not a failure. The point is that no earlier
+    value is lost silently: the previous raw file is still stored, and this check says what moved.
+    """
+    if previous is None or previous.empty:
+        return check("revisions", PASS, "no previous processed file to compare with")
+    if any(c not in previous.columns for c in [*OBSERVATION_KEY, "value"]):
+        return check("revisions", WARN, "the previous processed file does not have the standard columns; not compared")
+    old = previous[[*OBSERVATION_KEY, "value"]].astype({"date": str, "geography": str, "series": str})
+    new = processed[[*OBSERVATION_KEY, "value"]].astype({"date": str, "geography": str, "series": str})
+    merged = old.merge(new, on=OBSERVATION_KEY, how="outer", suffixes=("_old", "_new"), indicator=True)
+    both = merged[merged["_merge"] == "both"]
+    a, b = both["value_old"], both["value_new"]
+    changed = both[~((a.isna() & b.isna()) | ((a - b).abs() <= 1e-9 * (1 + a.abs())))]
+    removed = merged[merged["_merge"] == "left_only"]
+    added = int((merged["_merge"] == "right_only").sum())
+    data = {"changed_values": int(len(changed)), "removed_observations": int(len(removed)), "new_observations": added}
+    if changed.empty and removed.empty:
+        return check("revisions", PASS, f"no earlier value changed or disappeared; {added} new observations", **data)
+    details = []
+    if len(changed):
+        examples = [f"{r.date} {r.series}: {r.value_old} -> {r.value_new}" for r in changed.head(EXAMPLES).itertuples()]
+        details.append(f"{len(changed)} values revised, e.g. {examples}")
+    if len(removed):
+        examples = [f"{r.date} {r.series}" for r in removed.head(EXAMPLES).itertuples()]
+        details.append(f"{len(removed)} observations no longer published, e.g. {examples}")
+    return check("revisions", WARN, "; ".join(details) + f"; {added} new observations. "
+                 "The previous version is kept in the earlier raw file", **data)
 
 
 def check_processed_layout(processed: pd.DataFrame) -> dict:
