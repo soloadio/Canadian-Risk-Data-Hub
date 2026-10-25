@@ -32,21 +32,19 @@ WHAT YOU GET (for each table, named with its dataset ID, e.g. statcan_18100005_c
 
 It is safe to run again. Once a table has a metadata record its dataset ID never changes,
 raw files are never overwritten, and the output says whether the data changed since last time.
-Quality checks live in scripts/validation/validate_statcan_dataset.py. If a check fails, the
-processed file and metadata record are left as they were.
+Quality checks live in scripts/validation/validate_statcan_dataset.py (Statistics Canada-specific)
+and scripts/validation/hub_checks.py (shared). If a check fails, the processed file and metadata
+record are left as they were. Storage, raw versioning and metadata writing are shared with the
+other publishers' scripts in scripts/common/hub_core.py.
 """
 from __future__ import annotations
 
 import argparse
 import csv
-import hashlib
 import io
-import json
-import os
 import re
 import statistics
 import sys
-import time
 import zipfile
 from datetime import datetime
 from pathlib import Path
@@ -56,7 +54,10 @@ import pandas as pd
 import requests
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "validation"))
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "common"))
 import validate_statcan_dataset as checks  # noqa: E402  (lives in scripts/validation/)
+import hub_core  # noqa: E402  (lives in scripts/common/)
+from hub_core import AcquisitionError, slug  # noqa: E402,F401
 
 # ----------------------------------------------------------------------------
 # Configuration
@@ -66,9 +67,8 @@ WDS_BASE = "https://www150.statcan.gc.ca/t1/wds/rest"
 TABLE_PAGE = "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid={pid}01"
 SOURCE_CODE = "statcan"
 CATALOGUE_RELATIVE_PATH = Path("sources") / "statcan_tables.csv"
-TIMEOUT_SECONDS = 60
-MAX_ATTEMPTS = 3
-HEADERS = {"User-Agent": "rai-risk-data-hub/0.2 (student proof of concept)"}
+HEADERS = {"User-Agent": "rai-risk-data-hub/0.3 (student proof of concept)"}
+VALIDATOR = "scripts/validation/validate_statcan_dataset.py"
 
 # Provenance written into every metadata record (see the README, "Common metadata").
 SOURCE_ORGANIZATION = "Statistics Canada"
@@ -106,10 +106,6 @@ TITLE_STOP_WORDS = {
 }
 
 
-class AcquisitionError(Exception):
-    """A problem with one table. The message is shown to the user."""
-
-
 # ----------------------------------------------------------------------------
 # Table numbers and the catalogue
 # ----------------------------------------------------------------------------
@@ -122,10 +118,6 @@ def parse_table_number(text: str) -> str:
     if len(digits) != 8:
         raise ValueError(f"{text!r} is not a Statistics Canada table number (expected like 18-10-0005-01)")
     return digits
-
-
-def slug(text: str) -> str:
-    return re.sub(r"[^a-z0-9]+", "_", text.lower()).strip("_")
 
 
 def parse_table_arg(text: str) -> dict:
@@ -176,29 +168,17 @@ def pretty_table_number(product_id: str) -> str:
 # Talking to Statistics Canada
 # ----------------------------------------------------------------------------
 
+def locked_table(response) -> None:
+    if response.status_code == 409:
+        raise AcquisitionError(
+            "Statistics Canada returned HTTP 409. The table is probably locked while it is "
+            "being updated (midnight to 8:30 a.m. Eastern). Try again after 8:30 a.m. Eastern."
+        )
+
+
 def http(session, method: str, url: str, **kwargs):
     """GET or POST with a timeout and a few retries on network or server errors."""
-    last_problem = "unknown problem"
-    for attempt in range(1, MAX_ATTEMPTS + 1):
-        try:
-            response = getattr(session, method)(url, timeout=TIMEOUT_SECONDS, headers=HEADERS, **kwargs)
-        except requests.RequestException as exc:
-            last_problem = f"network error: {exc}"
-        else:
-            if response.status_code == 409:
-                raise AcquisitionError(
-                    "Statistics Canada returned HTTP 409. The table is probably locked while it is "
-                    "being updated (midnight to 8:30 a.m. Eastern). Try again after 8:30 a.m. Eastern."
-                )
-            if response.status_code >= 500:
-                last_problem = f"HTTP {response.status_code}"
-            elif response.status_code >= 400:
-                raise AcquisitionError(f"HTTP {response.status_code} from {url}")
-            else:
-                return response
-        if attempt < MAX_ATTEMPTS:
-            time.sleep(2 ** attempt)
-    raise AcquisitionError(f"{last_problem} after {MAX_ATTEMPTS} attempts ({url})")
+    return hub_core.http(session, method, url, headers=HEADERS, on_status=locked_table, **kwargs)
 
 
 def get_zip_url(session, product_id: str) -> str:
@@ -366,88 +346,6 @@ def build_processed(raw: pd.DataFrame, dataset_id: str, geographies: list[str]):
 
 
 # ----------------------------------------------------------------------------
-# Dataset IDs, raw versions and metadata on disk
-# ----------------------------------------------------------------------------
-
-def resolve_dataset_id(metadata_dir: Path, product_id: str, derived_id: str) -> tuple[str, str | None]:
-    """Keep the ID a table already has, so a changed title or frequency never renames a dataset.
-
-    Returns (dataset_id, note). The note explains when the derived ID was not used.
-    """
-    existing = sorted(p.stem for p in metadata_dir.glob(f"{SOURCE_CODE}_{product_id}_*.json"))
-    if len(existing) > 1:
-        raise AcquisitionError(
-            f"more than one metadata record for table {pretty_table_number(product_id)}: {existing}. "
-            "Keep the one in use and delete or archive the others."
-        )
-    if existing:
-        if existing[0] != derived_id:
-            return existing[0], (f"kept existing dataset ID {existing[0]} (the title, catalogue subject or "
-                                 f"frequency now suggest {derived_id}; rename deliberately if needed)")
-        return existing[0], None
-    return derived_id, None
-
-
-def read_previous_metadata(path: Path) -> dict:
-    if not path.exists():
-        return {}
-    try:
-        return json.loads(path.read_text(encoding="utf-8"))
-    except (ValueError, OSError) as exc:
-        raise AcquisitionError(f"the existing metadata record {path} could not be read ({exc}); fix or remove it")
-
-
-def previous_history(previous: dict) -> list[dict]:
-    """Retrieval history on record. Records written before history existed get one entry from their fields."""
-    if previous.get("retrieval_history"):
-        return list(previous["retrieval_history"])
-    if previous.get("checksum"):
-        return [{
-            "retrieved": previous.get("last_retrieved"),
-            "checksum": previous.get("checksum"),
-            "raw_file": previous.get("raw_file_location"),
-            "source_last_updated": previous.get("source_last_updated"),
-            "data_changed": None,
-        }]
-    return []
-
-
-def atomic_write_bytes(path: Path, data: bytes) -> None:
-    """Write to a temporary file then rename, so an interrupted run never leaves a half-written file."""
-    temporary = path.with_name(path.name + ".partial")
-    temporary.write_bytes(data)
-    os.replace(temporary, path)
-
-
-def free_raw_path(raw_dir: Path, dataset_id: str, stamp: str) -> Path:
-    """<id>_<date>.csv, or <id>_<date>_2.csv, _3, ... if a file for that day already exists. Never overwrites."""
-    candidate = raw_dir / f"{dataset_id}_{stamp}.csv"
-    counter = 2
-    while candidate.exists():
-        candidate = raw_dir / f"{dataset_id}_{stamp}_{counter}.csv"
-        counter += 1
-    return candidate
-
-
-def store_raw(root: Path, raw_dir: Path, dataset_id: str, stamp: str, raw_bytes: bytes,
-              cube_meta_bytes: bytes | None, checksum: str, history: list[dict]) -> tuple[Path, bool]:
-    """Save the raw data as a new version, unless the same bytes are already stored.
-
-    Returns (raw file path, whether a new file was written).
-    """
-    if history:
-        last = history[-1]
-        last_file = root / last["raw_file"] if last.get("raw_file") else None
-        if last.get("checksum") == checksum and last_file and last_file.exists():
-            return last_file, False
-    raw_path = free_raw_path(raw_dir, dataset_id, stamp)
-    atomic_write_bytes(raw_path, raw_bytes)  # saved exactly as received
-    if cube_meta_bytes:
-        atomic_write_bytes(raw_path.with_name(raw_path.stem + "_cube_metadata.csv"), cube_meta_bytes)
-    return raw_path, True
-
-
-# ----------------------------------------------------------------------------
 # One table, end to end
 # ----------------------------------------------------------------------------
 
@@ -464,35 +362,10 @@ def release_time_with_offset(release_time: str | None) -> str | None:
     return local.isoformat(timespec="seconds")
 
 
-def script_location(root: Path) -> str:
-    """Path of this script relative to the hub folder (just the file name if it lives elsewhere)."""
-    here = Path(__file__).resolve()
-    try:
-        return here.relative_to(root.resolve()).as_posix()
-    except ValueError:
-        return here.name
-
-
-def quality_summary(info: dict, rows_processed: int, geographies: list[str], results: list[dict], status: str) -> str:
-    """One readable paragraph for the quality_notes field. The full results are under validation."""
-    by_name = {r["check"]: r for r in results}
-    parts = [
-        f"{info['rows_raw']} rows in raw file; {rows_processed} rows in processed file "
-        f"({'all geographies' if len(geographies) == info['geographies_in_source'] else ', '.join(geographies)}).",
-        f"Missing values: {by_name['missing_values']['detail']}." if "missing_values" in by_name else "",
-        f"Validation {status.replace('_', ' ')}.",
-    ]
-    warned = [f"{r['check']}: {r['detail']}" for r in results if r["status"] == checks.WARN and r["check"] != "missing_values"]
-    if warned:
-        parts.append("Warnings: " + " | ".join(warned))
-    return " ".join(p for p in parts if p)
-
-
 def acquire_table(table: dict, root: Path, session, default_geography: str, now: datetime) -> dict:
     """Run every step for one table. Returns a result dict; raises AcquisitionError on failure."""
     pid = table["product_id"]
     geography = table.get("geography") or default_geography
-    stamp = now.strftime("%Y%m%d")
     metadata_dir = root / "metadata"
     metadata_dir.mkdir(parents=True, exist_ok=True)
 
@@ -506,59 +379,37 @@ def acquire_table(table: dict, root: Path, session, default_geography: str, now:
     title = cube.get("cubeTitleEn") or f"Statistics Canada table {pretty_table_number(pid)}"
     subject = slug(table.get("subject") or "") or subject_from_title(cube.get("cubeTitleEn") or "")
     category = slug(table.get("category") or "") or "uncategorized"
-    dataset_id, id_note = resolve_dataset_id(metadata_dir, pid, f"{SOURCE_CODE}_{pid}_{subject}_{frequency}")
+    dataset_id, id_note = hub_core.resolve_dataset_id(metadata_dir, f"{SOURCE_CODE}_{pid}_",
+                                                      f"{SOURCE_CODE}_{pid}_{subject}_{frequency}",
+                                                      f"table {pretty_table_number(pid)}")
     # The frequency in a pinned ID is the one the dataset is known by; keep the metadata consistent with it.
     if id_note:
         frequency, frequency_basis = dataset_id.rsplit("_", 1)[-1], "taken from the existing dataset ID"
-    metadata_path = metadata_dir / f"{dataset_id}.json"
-    previous = read_previous_metadata(metadata_path)
-    history = previous_history(previous)
 
     # 2. Keep the raw data as received, as a new version only when it changed.
-    raw_dir = root / "raw" / SOURCE_CODE / dataset_id
-    processed_dir = root / "processed" / SOURCE_CODE / dataset_id
-    raw_dir.mkdir(parents=True, exist_ok=True)
-    processed_dir.mkdir(parents=True, exist_ok=True)
-    checksum = "sha256:" + hashlib.sha256(raw_bytes).hexdigest()
-    previous_checksum = history[-1]["checksum"] if history else None
-    raw_path, raw_written = store_raw(root, raw_dir, dataset_id, stamp, raw_bytes, cube_meta_bytes, checksum, history)
-    relative = lambda p: p.relative_to(root).as_posix()
+    ds = hub_core.open_dataset(root, SOURCE_CODE, dataset_id, now.strftime("%Y%m%d"), raw_bytes,
+                               ".csv", {"_cube_metadata.csv": cube_meta_bytes})
+    if id_note:
+        ds.notes.append(id_note)
+    if not cube:
+        ds.notes.append("title, release time and frequency unavailable from the service; subject and frequency "
+                        "taken from the catalogue or detected")
 
-    # 3. Validate and standardize.
+    # 3. Statistics Canada-specific checks, then standardize.
     dims = dimension_columns(raw)
     schema = checks.schema_of(raw, dims)
-    schema_result, schema_version = checks.check_schema(schema, previous.get("schema"), previous.get("schema_version"))
+    schema_result, schema_version = checks.check_schema(schema, ds.previous.get("schema"), ds.previous.get("schema_version"))
     geographies, geography_result = checks.select_geographies(raw, geography)
     results = [schema_result, checks.check_row_count(len(raw), cube.get("nbDatapointsCube")), geography_result]
     if geography_result["status"] == checks.FAIL:
-        raise AcquisitionError(f"{geography_result['detail']} (raw file kept: {relative(raw_path)})")
+        raise AcquisitionError(f"{geography_result['detail']} (raw file kept: {ds.relative(ds.raw_path)})")
 
     processed, info, raw_subset = build_processed(raw, dataset_id, geographies)
     results += [checks.check_dates(info["unparsed_dates"]), checks.check_numeric(info["non_numeric"]),
                 checks.check_terminated(raw_subset)]
-    processed, processed_results = checks.check_processed(processed, frequency)
-    results += processed_results
-    status = checks.overall_status(results)
-    if status == "failed":
-        raise AcquisitionError("validation failed, processed file and metadata left unchanged "
-                               f"(raw file kept: {relative(raw_path)}):\n    " + "\n    ".join(checks.failures(results)))
 
-    # 4. Write the processed file and the metadata record.
-    processed_path = processed_dir / f"{dataset_id}.csv"
-    atomic_write_bytes(processed_path, processed.to_csv(index=False, na_rep="").encode("utf-8"))
-
-    changed = None if previous_checksum is None else previous_checksum != checksum
-    source_last_updated = release_time_with_offset(cube.get("releaseTime"))
-    history.append({
-        "retrieved": now.isoformat(timespec="seconds"),
-        "checksum": checksum,
-        "raw_file": relative(raw_path),
-        "source_last_updated": source_last_updated,
-        "data_changed": changed,
-        "schema_version": schema_version,
-        "validation_status": status,
-    })
-    metadata = {
+    # 4. Shared checks, then write the processed file and the metadata record.
+    record = {
         "dataset_id": dataset_id,
         "dataset_name": title,
         "description": title,
@@ -568,7 +419,7 @@ def acquire_table(table: dict, root: Path, session, default_geography: str, now:
         "licence": LICENCE,
         "access": ACCESS,
         "retrieval_method": RETRIEVAL_METHOD,
-        "retrieval_script": script_location(root),
+        "retrieval_script": hub_core.script_location(__file__, root),
         "subject_category": category,
         "geography": f"{info['geographies_in_source']} geographies in source; processed file: "
                      + ("all" if geography.strip().lower() == "all" else "; ".join(geographies)),
@@ -577,42 +428,14 @@ def acquire_table(table: dict, root: Path, session, default_geography: str, now:
         "observation_start": info["obs_start"],
         "observation_end": info["obs_end"],
         "units": "; ".join(info["units"]),
-        "last_retrieved": now.isoformat(timespec="seconds"),
-        "raw_file_location": relative(raw_path),
-        "processed_file_location": relative(processed_path),
-        "update_frequency": None,
-        "source_last_updated": source_last_updated,
-        "checksum": checksum,
-        "schema_version": schema_version,
-        "schema": schema,
-        "quality_notes": quality_summary(info, len(processed), geographies, results, status),
-        "validation": {
-            "status": status,
-            "run_at": now.isoformat(timespec="seconds"),
-            "validator": "scripts/validation/validate_statcan_dataset.py",
-            "checks": results,
-        },
-        "retrieval_history": history,
-        "ai_use_note": AI_USE_NOTE,
     }
-    atomic_write_bytes(metadata_path, (json.dumps(metadata, indent=2, ensure_ascii=False) + "\n").encode("utf-8"))
-
-    notes = [id_note] if id_note else []
-    if not cube:
-        notes.append("title, release time and frequency unavailable from the service; subject and frequency "
-                      "taken from the catalogue or detected")
-    return {
-        "dataset_id": dataset_id,
-        "frequency": frequency,
-        "rows_raw": info["rows_raw"],
-        "rows_processed": len(processed),
-        "raw_path": relative(raw_path),
-        "raw_written": raw_written,
-        "raw_megabytes": len(raw_bytes) / 1e6,
-        "changed": changed,
-        "validation_status": status,
-        "warnings": notes + checks.warnings_of(results),
-    }
+    coverage = "all geographies" if len(geographies) == info["geographies_in_source"] else ", ".join(geographies)
+    return hub_core.finish_dataset(
+        ds, processed=processed, frequency=frequency, results=results, now=now, record=record,
+        source_last_updated=release_time_with_offset(cube.get("releaseTime")), schema=schema,
+        schema_version=schema_version, rows_raw=info["rows_raw"], coverage=coverage, validator=VALIDATOR,
+        ai_use_note=AI_USE_NOTE, missing_status=checks.MISSING_STATUS,
+    )
 
 
 # ----------------------------------------------------------------------------
@@ -674,13 +497,7 @@ def main(argv=None, session=None, now=None) -> int:
             failures += 1
             print(f"  FAILED: {exc}")
             continue
-        change = {None: "first retrieval", True: "DATA CHANGED since last retrieval", False: "unchanged since last retrieval"}[result["changed"]]
-        stored = "new raw file" if result["raw_written"] else "raw file already stored, not copied again"
-        print(f"  SUCCESS: {result['dataset_id']} ({result['frequency']}), validation {result['validation_status'].replace('_', ' ')}")
-        print(f"  {result['rows_raw']} raw rows ({result['raw_megabytes']:.1f} MB), {result['rows_processed']} processed rows, {change}")
-        print(f"  raw file: {result['raw_path']} ({stored})")
-        for warning in result["warnings"]:
-            print(f"  warning: {warning}")
+        hub_core.print_result(result)
 
     print(f"\nDone: {len(unique_tables) - failures} succeeded, {failures} failed.")
     return 1 if failures else 0
