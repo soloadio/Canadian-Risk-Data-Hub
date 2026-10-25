@@ -15,9 +15,9 @@ source .venv/bin/activate        # Windows: .venv\Scripts\activate
 Every table the hub tracks is listed in `sources/statcan_tables.csv`, one row per table:
 
 ```
-table_number,subject,category,geography
-11-10-0222-01,household_spending,household,
-14-10-0287-01,labour_force_characteristics,labour,
+table_number,subject,category,geography,update_frequency,refresh_schedule,revision_policy,priority,known_limitations
+11-10-0222-01,household_spending,household,,"biennial (...)","after each ... release, 08:30 ET",,,"The survey became biennial after 2017, ..."
+14-10-0287-01,labour_force_characteristics,labour,,"monthly (...)","on Labour Force Survey release days, after 08:30 ET",,,"The full table is about 1.2 GB raw. ..."
 ```
 
 | Column | Required | What to put |
@@ -26,6 +26,7 @@ table_number,subject,category,geography
 | `subject` | Recommended | One or two words for the dataset ID, e.g. `cpi`. If empty, it is built from the table title (place names such as "Canada" or "provinces" are left out). Only used the first time: once a table has a metadata record, its ID is kept |
 | `category` | No | A grouping label, e.g. `inflation`. Lowercased; `uncategorized` if empty |
 | `geography` | No | Which place to keep in the processed file. Empty means Canada; `all` keeps every place; separate several with `;` (e.g. `Ontario;Quebec`). Matching ignores capitals, and a DGUID also works. A name that is not in the table stops the run with the list of valid names |
+| `update_frequency`, `refresh_schedule`, `revision_policy`, `priority`, `known_limitations` | No | Written by people, copied into the metadata record as they are (see the README, *Common metadata*). Quote a value that contains commas. A one-off `--table` run of a catalogued table still uses them |
 
 Leave optional columns empty, but keep the commas.
 
@@ -77,12 +78,13 @@ The checks are described in the README (*Validation*). In short:
 To re-check processed files already on disk:
 
 ```bash
-python scripts/validation/validate_statcan_dataset.py --all
+python scripts/validation/validate_statcan_dataset.py --all   # Statistics Canada datasets only
+python scripts/validation/validate_dataset.py --all           # every publisher
 ```
 
 ### Known warnings for the current tables
 
-- **Household spending (11-10-0222-01):** the Survey of Household Spending became every second year after 2017, so 2018, 2020 and 2022 are absent from the whole table. One series ("Collectors' items") also skips a year. These are features of the source, not download errors. The dataset keeps the frequency `annual`, as StatCan declares it.
+- **Household spending (11-10-0222-01):** the Survey of Household Spending became every second year after 2017, so 2018, 2020 and 2022 are absent from the whole table. One series ("Collectors' items") also skips a year. These are features of the source, not download errors. The dataset keeps the frequency `annual`, as StatCan declares it. Since Week 3 it also gets a `freshness` warning: the latest reference year is 2023, more than 2.5 years ago, because the 2025 survey results have not been released yet.
 
 ## Troubleshooting
 

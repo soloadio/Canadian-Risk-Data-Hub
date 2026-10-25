@@ -2,6 +2,57 @@
 
 Changes to the hub's scripts, conventions and documentation, newest first.
 
+## v0.3: Week 3 (2026-10-24)
+
+A second publisher, the Bank of Canada (W3-SOL-01), on a shared core split out of the StatCan script (W3-SOL-02), alignment with the team's source catalogue and metadata work (W3-SOL-03), and refresh-readiness checks with a larger offline test suite (W3-SOL-04). Verified with 44 automated tests (`python -m pytest tests`) and live runs against both publishers on 2026-10-24.
+
+### What changed
+
+| Area | Week 2 | Risk | Week 3 change |
+|---|---|---|---|
+| Publishers | Statistics Canada only; storage, IDs, history and metadata code lived inside the StatCan script | Each new publisher would copy 700 lines and drift from the others | `scripts/common/hub_core.py` holds HTTP retries, stable IDs, raw versioning, history and atomic metadata writing for every publisher. The StatCan script keeps only StatCan logic and writes metadata identical to Week 2 (checked by running the Week 2 and Week 3 code on the same input) |
+| Bank of Canada | Not in the hub | The hub was only shown to work for one publisher | `scripts/acquisition/boc/download_boc_series.py` (Valet API): policy rate, CORRA, benchmark yields (2, 5, 10-year, long) and USD/CAD, following Maurya's W3-MAU-01 specification. Full history on every run, raw JSON kept as received, holidays create no empty rows |
+| Validation | StatCan checks in one file; date gaps only for monthly and longer data | New publishers would need their own copy; daily data was never checked for gaps | Shared checks in `scripts/validation/hub_checks.py`. New for every publisher: `date_gaps` for daily/weekly data (no series more than a week without an observation), `freshness` (latest observation recent enough) and `revisions` (values changed or removed since the previous retrieval). BoC checks: `series_present`, `future_dates`, `units`, `terms`, `empty_values` |
+| Re-checking | `validate_statcan_dataset.py` for StatCan files | No re-check for other publishers | `scripts/validation/validate_dataset.py --all` re-checks every publisher's processed files. The StatCan command still works |
+| Refresh readiness | Not checked | An edited raw file, a missing processed file or a catalogue entry never downloaded would only show up during a refresh | `scripts/validation/check_refresh_readiness.py`: raw files still match their checksums, processed files exist, no failed validation, catalogues and records match, datasets due for a refresh listed. Offline; exit code 1 on a problem |
+| Metadata | `update_frequency` always empty; no field for human caveats, priority or reproducibility | Records could not carry the team's inventory fields (W3-MAU-03 crosswalk) | Catalogue columns `update_frequency`, `refresh_schedule`, `revision_policy`, `priority`, `known_limitations` copied into every record; computed `access_format`, `primary_key`, `reproducibility_rating` |
+| Tests | 15 StatCan tests | Shared code had no tests of its own | 44 tests, all offline: StatCan (16), Bank of Canada with a fake Valet service (10), shared core and checks (13), refresh readiness (5). GitHub Actions runs them on every push |
+| Analysis | Labour force and household notebooks | No cross-publisher example | `notebooks/03_bank_of_canada_rates.ipynb`: policy rate vs CORRA, yield-curve slope, USD/CAD, and `analysis_ready/rates_and_unemployment_monthly.csv`, the first table combining Bank of Canada and Statistics Canada data |
+
+### New and changed files
+
+- `scripts/common/hub_core.py` (new): the shared core.
+- `scripts/acquisition/boc/download_boc_series.py` (new) and `sources/boc_series.csv` (new): the Bank of Canada adapter and its catalogue.
+- `scripts/validation/hub_checks.py` (new), `validate_dataset.py` (new), `check_refresh_readiness.py` (new); `validate_statcan_dataset.py` now holds only StatCan checks and re-exports the shared ones.
+- `scripts/acquisition/statcan/download_statcan_table.py`: uses the shared core; reads the new catalogue columns, also for one-off `--table` runs.
+- `sources/statcan_tables.csv`: new catalogue columns filled where documented.
+- `tests/test_boc_acquisition.py`, `tests/test_hub_core.py`, `tests/test_refresh_readiness.py` (new); `.github/workflows/tests.yml` (new).
+- `notebooks/03_bank_of_canada_rates.ipynb` (new), two analysis-ready tables and three charts in `outputs/`.
+- `documentation/boc_acquisition.md` (new), `documentation/integration_note_week3.md` (new), `README.md`, `documentation/statcan_acquisition.md`.
+- `.gitignore`: raw JSON files are excluded like raw CSVs.
+- Four new Bank of Canada metadata records; both StatCan records refreshed.
+
+### Results of the 2026-10-24 live runs
+
+| Dataset | Raw / processed | Validation | Reproducibility |
+|---|---|---|---|
+| `boc_v39079_policy_rate_daily` | 4,554 dates / 4,554 values, 2009-04-21 to 2026-10-22 | Passed | Confirmed High (2 identical retrievals, same day) |
+| `boc_avgintwo_corra_daily` | 7,294 / 7,294, 1997-08-12 to 2026-10-22 | Passed | Confirmed High (2, same day) |
+| `boc_bdcdnyld_bond_yields_daily` | 6,453 dates / 25,809 values (4 series), 2001-01-02 to 2026-10-22 | Passed | Confirmed High (2, same day) |
+| `boc_fxusdcad_exchange_rate_daily` | 2,447 / 2,447, 2017-01-03 to 2026-10-23 | Passed | Confirmed High (2, same day) |
+| `statcan_11100222_household_spending_annual` | 44,265 / 3,405 rows; same checksum as Weeks 1 and 2 | Passed with warnings: the same date gaps as Week 2, plus `freshness` (latest year 2023) | Confirmed High (3 identical retrievals) |
+| `statcan_14100287_labour_force_characteristics_monthly` | 5,475,519 / 633,969 rows; same checksum as Weeks 1 and 2 | Passed | Confirmed High (3) |
+
+Both StatCan dataset IDs are unchanged. The Bank of Canada was run twice on 2026-10-24; the second run found the data unchanged and reused the stored raw files. `validate_dataset.py --all` and `check_refresh_readiness.py` report no failures and no problems for the six datasets.
+
+### Not done yet
+
+- **Alignment with Ayesha's metadata standard and QA framework was skipped:** no files from Ayesha were available. `documentation/integration_note_week3.md` (section 7) lists what to compare when they are shared.
+- `revision_policy` and `priority` are empty for the two StatCan tables; neither is documented in the inputs used this week.
+- Refreshes are not scheduled: `refresh_schedule` records when to run, and `documentation/boc_acquisition.md` shows how, but there is no server yet. The PostgreSQL design in W3-MAU-01 is noted as the path if a database is adopted.
+- The Bank of Canada `reproducibility_rating` rests on two retrievals on the same day; a repeat on a later day would be stronger evidence.
+- Processed files still do not carry a stable series identifier (StatCan vector, Valet series name) beside the label.
+
 ## v0.2: Week 2 (2026-10-18)
 
 Hardening and validation of the Statistics Canada acquisition prototype (W2-SOL-01), and documentation and provenance updates (W2-SOL-02). Verified with a live run against Statistics Canada on 2026-10-18 for both catalogued tables, and with 15 automated tests (`python -m pytest tests`).

@@ -4,7 +4,14 @@ A structured, repeatable process for identifying, acquiring, cleaning, maintaini
 
 Part of the Risk Analytics Institute project *Building an AI-Ready Canadian Risk Data Hub* (Oct 5 – Nov 2026).
 
-> **Status:** Draft v0.2 (Week 2). The Statistics Canada prototype now has stable dataset IDs, versioned raw files and automated validation. See [documentation/changelog.md](documentation/changelog.md) for what changed.
+> **Status:** Draft v0.3 (Week 3). The hub now takes data from two publishers, Statistics Canada and the Bank of Canada, through one shared core for storage, metadata and validation. See [documentation/changelog.md](documentation/changelog.md) for what changed.
+
+**Data in the hub**
+
+| Publisher | Datasets | Script | Guide |
+|---|---|---|---|
+| Statistics Canada | Labour force characteristics (14-10-0287-01), household spending (11-10-0222-01) | `scripts/acquisition/statcan/download_statcan_table.py` | [statcan_acquisition.md](documentation/statcan_acquisition.md) |
+| Bank of Canada | Policy rate (V39079), CORRA (AVG.INTWO), benchmark bond yields (2, 5, 10-year and long), USD/CAD (FXUSDCAD) | `scripts/acquisition/boc/download_boc_series.py` | [boc_acquisition.md](documentation/boc_acquisition.md) |
 
 ---
 
@@ -28,7 +35,7 @@ Source identification -> evaluation -> repeatable acquisition -> raw storage
 ```
 Canadian-Risk-Data-Hub/
 ├── notebooks/            # Notebooks to study and analyze the datasets
-├── sources/              # Catalogue of sources: publisher, access method, update cadence
+├── sources/              # One catalogue per publisher: what to download, and its update cadence
 ├── raw/                  # Data exactly as received
 │   └── <source>/<dataset_id>/
 ├── processed/            # Cleaned, standardized data
@@ -36,10 +43,12 @@ Canadian-Risk-Data-Hub/
 ├── analysis_ready/       # Final tables for analysis, dashboards, modelling, AI use
 ├── metadata/             # One metadata record per dataset
 ├── scripts/              # Acquisition, transformation and validation code
-│   ├── acquisition/<source>/
+│   ├── acquisition/<source>/   # One adapter per publisher (statcan/, boc/)
+│   ├── common/                 # Shared core: storage, IDs, history, metadata
 │   ├── processing/
-│   └── validation/
+│   └── validation/             # Shared and publisher-specific checks
 ├── tests/                # Automated tests for the scripts (no network needed)
+├── .github/workflows/    # Runs the tests on every push
 ├── documentation/        # Methodology, update procedures, known limitations, changelog
 ├── outputs/              # Charts, tables and summaries produced from the data
 ├── requirements.txt      # Python dependencies
@@ -76,7 +85,7 @@ source _ table number _ subject _ frequency
 Example: `statcan_18100004_cpi_monthly`
 
 - `statcan`: who publishes it (`boc` for Bank of Canada, and so on)
-- `18100004`: the publisher's own table number, so the data can always be traced back
+- `18100004`: the publisher's own table or series number, without punctuation, so the data can always be traced back. For the Bank of Canada this is the series name (`V39079` gives `v39079`, `AVG.INTWO` gives `avgintwo`); a dataset holding several series uses the `id_part` set in the catalogue (the benchmark yields use `bdcdnyld`)
 - `cpi`: what it measures, in one or two words
 - `monthly`: how often the data is observed (`daily`, `weekly`, `biweekly`, `monthly`, `quarterly`, `semiannual`, `annual`, or `irregular` when no regular spacing is found)
 
@@ -86,6 +95,7 @@ Example: `statcan_18100004_cpi_monthly`
 |---|---|
 | Raw | `statcan_18100004_cpi_monthly_20261009.csv` |
 | Raw (table description from StatCan) | `statcan_18100004_cpi_monthly_20261009_cube_metadata.csv` |
+| Raw (Bank of Canada, kept in the format received) | `boc_v39079_policy_rate_daily_20261024.json` |
 | Processed | `statcan_18100004_cpi_monthly.csv` |
 | Metadata | `statcan_18100004_cpi_monthly.json` |
 
@@ -113,8 +123,9 @@ Every dataset has one metadata record in `metadata/` (`<dataset_id>.json`). The 
 | `source_organization` | Organization that publishes the data, e.g. `Statistics Canada` |
 | `source_url` | Page where the data is published |
 | `source_table_or_series_id` | Provider's table or series number |
-| `licence` | Licence name and URL under which the data may be used (Statistics Canada: Open Licence) |
+| `licence` | Licence name and URL under which the data may be used (Statistics Canada: Open Licence; Bank of Canada: Terms of Use, with its conditions) |
 | `access` | How the data can be accessed: public or restricted, free or paid, account or key needed |
+| `access_format` | The format the data arrives in, e.g. CSV in a ZIP archive, or JSON from a REST API |
 | `retrieval_method` | How the data is fetched: service, endpoint and file format |
 | `retrieval_script` | Path of the script that fetched the data |
 | `ai_use_note` | How AI tools were used in producing the dataset and what was validated. States that no data values were generated or changed by AI |
@@ -123,8 +134,8 @@ Every dataset has one metadata record in `metadata/` (`<dataset_id>.json`). The 
 
 | Field | Description |
 |---|---|
-| `subject_category` | inflation, labour, credit, housing, financial_markets, etc. Taken from the source catalogue (`sources/statcan_tables.csv`) and lowercased; `uncategorized` if left blank there |
-| `geography` | Number of geographies in the source, and the coverage kept in the processed file (Canada by default; one or more places, or all, if requested) |
+| `subject_category` | inflation, labour, credit, housing, interest_rates, etc. Taken from the source catalogue (`sources/statcan_tables.csv`, `sources/boc_series.csv`) and lowercased; `uncategorized` if left blank there |
+| `geography` | Geographic coverage in the source, and the coverage kept in the processed file (Canada by default; one or more places, or all, if requested) |
 | `frequency` | Observation frequency (see naming conventions for the values) |
 | `frequency_basis` | Where the frequency came from: declared by the publisher, detected from the dates, or taken from the existing dataset ID |
 | `observation_start` / `observation_end` | First and last reference period, as ISO dates (`2010-01-01`) |
@@ -139,14 +150,20 @@ Every dataset has one metadata record in `metadata/` (`<dataset_id>.json`). The 
 | `last_retrieved` | Timestamp of the latest retrieval, with UTC offset |
 | `raw_file_location` | Path to the raw file holding the latest data |
 | `processed_file_location` | Path to the processed file |
-| `update_frequency` | How often the source publishes. Not detected yet, so left empty (null) |
-| `source_last_updated` | Provider's own release time for the table, with UTC offset, if available |
+| `update_frequency` | When the publisher releases new data, in words (e.g. "monthly (Labour Force Survey, released early in the following month at 08:30 ET)"). From the source catalogue |
+| `refresh_schedule` | When the hub should re-run the acquisition, with the time zone. From the source catalogue |
+| `revision_policy` | Whether and how the publisher revises published values. From the source catalogue; empty (null) where not yet documented |
+| `source_last_updated` | Provider's own release time for the table, with UTC offset, if available (the Bank of Canada's API does not give one) |
 | `checksum` | SHA-256 of the raw file, used to tell whether the data changed since the previous retrieval |
+| `primary_key` | The columns that identify one observation in the processed file: `date`, `geography`, `series` (the `duplicates` check enforces it) |
+| `reproducibility_rating` | `Confirmed High` once two retrievals produced byte-identical raw data (same checksum), otherwise `Potential High`, with the basis for the rating |
 | `quality_notes` | One-paragraph summary of the validation results, for people reading the record |
+| `known_limitations` | Caveats a user must know, written by people (e.g. a survey that became biennial, a methodology change). From the source catalogue |
+| `priority` | The team's priority for the dataset. From the source catalogue; empty (null) where not yet assigned |
 | `validation` | Overall result (`passed`, `passed_with_warnings`) and every individual check with its status and details (see *Validation*) |
 | `retrieval_history` | One entry per retrieval: time, checksum, raw file, source release time, whether the data changed, schema version and validation result |
 
-The acquisition script fills in every field automatically and refreshes the record each time it runs.
+The acquisition script fills in every field and refreshes the record each time it runs. Fields marked "From the source catalogue" are written by people in the catalogue CSV and copied as they are; nothing is added to a metadata record by hand, because the next run would overwrite it.
 
 ---
 
@@ -154,7 +171,7 @@ The acquisition script fills in every field automatically and refreshes the reco
 
 **Dates.** ISO 8601 (`YYYY-MM-DD`). Periodic data uses the first day of the period (August 2026 is `2026-08-01`, Q3 2026 is `2026-07-01`); the `frequency` field records the period length. Timestamps include the UTC offset.
 
-**Missing values.** Left empty (null) in processed files, never `0` and never text such as "n/a" or "..". Statistics Canada uses status symbols (for example `..` for not available and `x` for suppressed); the processed table keeps these in a separate `status` column so "missing" and "suppressed" can be told apart.
+**Missing values.** Left empty (null) in processed files, never `0` and never text such as "n/a" or "..". Statistics Canada uses status symbols (for example `..` for not available and `x` for suppressed); the processed table keeps these in a separate `status` column so "missing" and "suppressed" can be told apart. The Bank of Canada leaves a series out of a date when it has no value (market holidays), so no row is created for it: an absent row means "not published that day", not a missing value.
 
 **Variable names.** Lowercase `snake_case`, no spaces, special characters or accents. Standard names for common columns: `date`, `geography`, `series`, `value`, `unit`, `source`, `dataset_id`, `status`.
 
@@ -193,15 +210,43 @@ Every retrieval is checked automatically before the processed file and metadata 
 | `terminated_series` | Series the publisher no longer updates | Never; reported for information |
 | `duplicates` | Repeated observations | Two rows share date, geography and series with different values. Exact copies are removed with a warning |
 | `missing_values` | Every missing value has a status explaining it (`..`, `x`, `F`, `...`), and no published value carries one of those statuses | Never; unexplained or contradictory cases are a warning |
-| `date_gaps` | Periods absent from the whole table, and series that skip periods inside their own date range (monthly, quarterly, semiannual and annual data) | Never; gaps are a warning |
+| `date_gaps` | Periods absent from the whole table, and series that skip periods inside their own date range (monthly, quarterly, semiannual and annual data). For daily, weekly and biweekly data: stretches longer than a week (two weeks, four weeks) without an observation | Never; gaps are a warning |
+| `revisions` | The new processed file compared with the previous one: values that changed and observations that disappeared | Never; revisions are a warning, and the earlier version stays in its raw file |
+| `freshness` | Whether the latest observation is as recent as the frequency and the usual publication lag allow (e.g. 75 days for monthly data) | Never; stale data is a warning |
+
+The checks above `duplicates` that depend on the publisher's layout are Statistics Canada's. The Bank of Canada adapter runs its own: `series_present` (every requested series came back with values; fails otherwise), `units`, `future_dates` (fails on an observation dated after today), `terms` (the response carries the Bank's terms of use) and `empty_values`. Everything from `duplicates` down is shared by every publisher (`scripts/validation/hub_checks.py`).
 
 To re-run the checks on processed files already on disk, without downloading:
 
 ```bash
-python scripts/validation/validate_statcan_dataset.py --all
+python scripts/validation/validate_dataset.py --all
 ```
 
-Run the automated tests with `python -m pytest tests`.
+**Refresh readiness.** Before a scheduled refresh, check that the hub is in a good state, without downloading anything:
+
+```bash
+python scripts/validation/check_refresh_readiness.py
+```
+
+It confirms that every raw file still matches its recorded checksum, every processed file exists, no last validation failed, each catalogue entry has been acquired and each record is still in a catalogue, and it lists datasets due for a refresh. It exits with code 1 if anything would break the next refresh.
+
+**Tests.** Run the automated tests with `python -m pytest tests`. They replace the publishers with fake services, so they need no network and no large download; GitHub Actions runs them on every push.
+
+---
+
+## Adding a publisher
+
+Each publisher has a small adapter script in `scripts/acquisition/<source>/`. Everything that should work the same way for every publisher is in `scripts/common/hub_core.py` and `scripts/validation/hub_checks.py`, so an adapter only does what is specific to its publisher:
+
+| The adapter provides | The shared core provides |
+|---|---|
+| A source catalogue (`sources/<source>_….csv`) and code to read it | Stable dataset IDs (`resolve_dataset_id`): an existing record pins the ID |
+| Fetching the data (endpoint, format, publisher error messages) | HTTP with retries and timeouts (`http`) |
+| Turning the raw file into the standard processed table | Raw storage: saved as received, a new dated version only when the data changed, never overwritten (`open_dataset`) |
+| Publisher-specific checks (status codes, geography, series present, …) | The shared checks, refusing to overwrite outputs when a check fails, the processed file, the metadata record and its retrieval history, all written atomically (`finish_dataset`) |
+| Provenance constants: organization, licence, access, retrieval method | Computed fields: checksum, `reproducibility_rating`, `primary_key`, catalogue fields copied into the record |
+
+The Bank of Canada adapter (`download_boc_series.py`, about 400 lines including documentation) is the model to copy. Add offline tests with a fake service, as in `tests/test_boc_acquisition.py`, and a guide in `documentation/`.
 
 ---
 
@@ -221,7 +266,7 @@ source .venv/bin/activate        # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-Acquisition instructions for each source are added to `documentation/` as scripts are built. The Statistics Canada proof of concept is the first: see [documentation/statcan_acquisition.md](documentation/statcan_acquisition.md).
+Acquisition instructions for each source are in `documentation/`: [statcan_acquisition.md](documentation/statcan_acquisition.md) and [boc_acquisition.md](documentation/boc_acquisition.md). How the hub lines up with the team's source catalogue and metadata work is in [integration_note_week3.md](documentation/integration_note_week3.md).
 
 ---
 
