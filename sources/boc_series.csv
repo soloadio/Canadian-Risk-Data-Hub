@@ -1,0 +1,5 @@
+series_ids,id_part,subject,name,category,update_frequency
+V39079,,policy_rate,,interest_rates,"business daily; changes announced on 8 scheduled dates a year at 09:45 ET, effective the next business day"
+AVG.INTWO,,corra,,interest_rates,"business daily; published 09:00-11:00 ET for the previous business day"
+BD.CDN.2YR.DQ.YLD;BD.CDN.5YR.DQ.YLD;BD.CDN.10YR.DQ.YLD;BD.CDN.LONG.DQ.YLD,bdcdnyld,bond_yields,"Selected benchmark bond yields: 2-year, 5-year, 10-year and long-term",interest_rates,"business daily; end-of-day yields, posted with a lag (complete by the next morning)"
+FXUSDCAD,,exchange_rate,,exchange_rates,"business daily; published around 16:30 ET"
