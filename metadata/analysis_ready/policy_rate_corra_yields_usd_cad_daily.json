@@ -1,0 +1,130 @@
+{
+  "table_id": "policy_rate_corra_yields_usd_cad_daily",
+  "file": "analysis_ready/policy_rate_corra_yields_usd_cad_daily.csv",
+  "description": "Business-daily Bank of Canada policy rate, CORRA, benchmark Government of Canada bond yields (2, 5, 10-year and long-term) and the USD/CAD exchange rate, as published.",
+  "built_by": "scripts/processing/build_analysis_ready.py",
+  "built_at": "2026-11-07T15:53:57-05:00",
+  "inputs": [
+    {
+      "dataset_id": "boc_v39079_policy_rate_daily",
+      "raw_checksum": "sha256:53c57094b737f9554ade3192bfe092952edf3231eb0ab12612967384a85caaf1",
+      "last_retrieved": "2026-11-07T15:47:23-05:00",
+      "validation_status": "passed"
+    },
+    {
+      "dataset_id": "boc_avgintwo_corra_daily",
+      "raw_checksum": "sha256:fa3cc88063ca881ac38791cee67f6aa801a7734805a8fd08b463c905f96282f9",
+      "last_retrieved": "2026-11-07T15:47:23-05:00",
+      "validation_status": "passed_with_warnings"
+    },
+    {
+      "dataset_id": "boc_bdcdnyld_bond_yields_daily",
+      "raw_checksum": "sha256:610d0ac8dd204d448c47dd1485786db145f26d9e1c35cd8d084d74a03f54f1b5",
+      "last_retrieved": "2026-11-07T15:47:23-05:00",
+      "validation_status": "passed"
+    },
+    {
+      "dataset_id": "boc_fxusdcad_exchange_rate_daily",
+      "raw_checksum": "sha256:2efc584e2bf708225b85c1fd3c0a1dbc0839cd34d38793de3e7c8a906301aa66",
+      "last_retrieved": "2026-11-07T15:47:23-05:00",
+      "validation_status": "passed"
+    }
+  ],
+  "selection": "Every published observation of the four Bank of Canada datasets.",
+  "derivations": {},
+  "key": [
+    "date",
+    "series_id"
+  ],
+  "columns": [
+    "date",
+    "geography",
+    "geo_code",
+    "series",
+    "series_id",
+    "value",
+    "unit",
+    "status",
+    "status_category",
+    "source",
+    "dataset_id"
+  ],
+  "rows": 40174,
+  "observation_start": "1997-08-12",
+  "observation_end": "2026-11-06",
+  "known_limitations": "Market series have no row on market holidays; the policy rate is published every business day. Benchmark yields can jump when the Bank moves a benchmark to a new bond. USD/CAD is an indicative rate for statistical and analytical use.",
+  "content_checksum": "sha256:3b1e62bde87e69d7038aff2069010048b8de9ac49852a98e7574fc7d0b82cb43",
+  "validation": {
+    "status": "passed",
+    "run_at": "2026-11-07T15:53:57-05:00",
+    "validator": "scripts/validation/validate_analysis_ready.py",
+    "standard": "RAI_Metadata_QA_Standard_v1.0",
+    "checks": [
+      {
+        "check": "table_layout",
+        "status": "pass",
+        "detail": "40174 rows with the required columns"
+      },
+      {
+        "check": "key_fields",
+        "status": "pass",
+        "detail": "no empty values in ['date', 'geography', 'series_id', 'dataset_id']"
+      },
+      {
+        "check": "table_key",
+        "status": "pass",
+        "detail": "['date', 'series_id'] identifies every row",
+        "key": [
+          "date",
+          "series_id"
+        ],
+        "repeated_rows": 0
+      },
+      {
+        "check": "duplicate_rows",
+        "status": "pass",
+        "detail": "no repeated rows",
+        "duplicate_rows": 0
+      },
+      {
+        "check": "nulls_explained",
+        "status": "pass",
+        "detail": "no empty values",
+        "missing": 0,
+        "unexplained": 0,
+        "missing_by_status": {}
+      },
+      {
+        "check": "provenance",
+        "status": "pass",
+        "detail": "all 40174 source rows match a published observation (value and status)",
+        "source_rows": 40174,
+        "derived_rows": 0,
+        "rows_without_source": 0,
+        "values_differing": 0,
+        "statuses_differing": 0,
+        "derived_values_recomputed": 0
+      },
+      {
+        "check": "derivations_documented",
+        "status": "pass",
+        "detail": "no derived rows"
+      },
+      {
+        "check": "inputs_current",
+        "status": "pass",
+        "detail": "built from the current data of all 4 inputs, which passed validation"
+      },
+      {
+        "check": "unit_consistency",
+        "status": "pass",
+        "detail": "one unit per series (7 series)"
+      },
+      {
+        "check": "future_dates",
+        "status": "pass",
+        "detail": "no observation dated after 2026-11-07"
+      }
+    ]
+  }
+}

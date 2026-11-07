@@ -1,0 +1,116 @@
+{
+  "table_id": "household_spending_by_category_annual",
+  "file": "analysis_ready/household_spending_by_category_annual.csv",
+  "description": "Average annual spending per household in Canada by spending category, as published in the Survey of Household Spending, one row per category and survey year.",
+  "built_by": "scripts/processing/build_analysis_ready.py",
+  "built_at": "2026-11-07T15:53:57-05:00",
+  "inputs": [
+    {
+      "dataset_id": "statcan_11100222_household_spending_annual",
+      "raw_checksum": "sha256:50e9f0511225ae5509689128a87846c5ff90fe27f6ff63c20767d3c238d7fd5c",
+      "last_retrieved": "2026-11-07T15:47:33-05:00",
+      "validation_status": "passed_with_warnings"
+    }
+  ],
+  "selection": "Canada; statistic 'Average expenditure per household'; every published category and year, including empty values with their status (F, ..).",
+  "derivations": {},
+  "key": [
+    "date",
+    "series_id"
+  ],
+  "columns": [
+    "date",
+    "geography",
+    "geo_code",
+    "category",
+    "series",
+    "series_id",
+    "value",
+    "unit",
+    "status",
+    "status_category",
+    "source",
+    "dataset_id"
+  ],
+  "rows": 3405,
+  "observation_start": "2010-01-01",
+  "observation_end": "2023-01-01",
+  "known_limitations": "Survey years only (biennial since 2017: no 2018, 2020 or 2022). Categories changed between 2017 and 2019, so some cover only part of the period; years a category was not published have no row. Categories are hierarchical (totals and components): do not sum them. Current dollars. Empty values keep StatCan's reason in status (F = too unreliable to publish, .. = not available).",
+  "content_checksum": "sha256:b42b5b3451ff994774bfd91c51b13f0989e94dae7906f6a7691b6310e422e04b",
+  "validation": {
+    "status": "passed",
+    "run_at": "2026-11-07T15:53:57-05:00",
+    "validator": "scripts/validation/validate_analysis_ready.py",
+    "standard": "RAI_Metadata_QA_Standard_v1.0",
+    "checks": [
+      {
+        "check": "table_layout",
+        "status": "pass",
+        "detail": "3405 rows with the required columns"
+      },
+      {
+        "check": "key_fields",
+        "status": "pass",
+        "detail": "no empty values in ['date', 'geography', 'series_id', 'dataset_id']"
+      },
+      {
+        "check": "table_key",
+        "status": "pass",
+        "detail": "['date', 'series_id'] identifies every row",
+        "key": [
+          "date",
+          "series_id"
+        ],
+        "repeated_rows": 0
+      },
+      {
+        "check": "duplicate_rows",
+        "status": "pass",
+        "detail": "no repeated rows",
+        "duplicate_rows": 0
+      },
+      {
+        "check": "nulls_explained",
+        "status": "info",
+        "detail": "108 of 3405 values empty (3.2%), by status: {'F': 87, '..': 21}",
+        "missing": 108,
+        "unexplained": 0,
+        "missing_by_status": {
+          "F": 87,
+          "..": 21
+        }
+      },
+      {
+        "check": "provenance",
+        "status": "pass",
+        "detail": "all 3405 source rows match a published observation (value and status)",
+        "source_rows": 3405,
+        "derived_rows": 0,
+        "rows_without_source": 0,
+        "values_differing": 0,
+        "statuses_differing": 0,
+        "derived_values_recomputed": 0
+      },
+      {
+        "check": "derivations_documented",
+        "status": "pass",
+        "detail": "no derived rows"
+      },
+      {
+        "check": "inputs_current",
+        "status": "pass",
+        "detail": "built from the current data of all 1 inputs, which passed validation"
+      },
+      {
+        "check": "unit_consistency",
+        "status": "pass",
+        "detail": "one unit per series (363 series)"
+      },
+      {
+        "check": "future_dates",
+        "status": "pass",
+        "detail": "no observation dated after 2026-11-07"
+      }
+    ]
+  }
+}
