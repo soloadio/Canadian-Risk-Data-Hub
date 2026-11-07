@@ -23,10 +23,11 @@ import hub_core  # noqa: E402
 NOW = datetime(2026, 10, 24, 12, 0, tzinfo=timezone(timedelta(hours=-4)))
 
 
-def frame(dates, series="s", values=None, geography="Canada"):
+def frame(dates, series="s", values=None, geography="Canada", series_id=None):
     values = values if values is not None else [1.0] * len(dates)
     return pd.DataFrame({"date": dates, "geography": geography, "series": series, "value": values, "unit": "u",
-                         "source": "test", "dataset_id": "test_x_s_daily", "status": ""})
+                         "source": "test", "dataset_id": "test_x_s_monthly", "status": "", "status_category": "",
+                         "geo_code": "", "series_id": series_id or f"id_{series}"})
 
 
 def finish(ds, processed, frequency="monthly", **kw):
@@ -100,7 +101,7 @@ def test_revisions_report_changed_and_vanished_values():
     old = frame(["2026-07-01", "2026-08-01", "2026-09-01"], values=[1.0, 2.0, 3.0])
     new = frame(["2026-08-01", "2026-09-01", "2026-10-01"], values=[2.0, 3.5, 4.0])
     result = checks.check_revisions(old, new)
-    assert result["status"] == "warn"
+    assert result["status"] == "info"  # QA-RV1 is INFO in the team standard
     assert (result["changed_values"], result["removed_observations"], result["new_observations"]) == (1, 1, 1)
 
 
@@ -131,7 +132,8 @@ def test_finish_records_revisions_against_the_previous_processed_file(tmp_path):
            frame(["2026-08-01", "2026-09-01"], values=[1.0, 2.0]))
     result = finish(hub_core.open_dataset(tmp_path, "test", "test_x_s_monthly", "20261025", b"b"),
                     frame(["2026-08-01", "2026-09-01"], values=[1.0, 2.5]))
-    assert any(w.startswith("revisions: 1 values revised") for w in result["warnings"])
+    # A revision is a note (INFO, QA-RV1 in the team standard), not a warning.
+    assert any(n.startswith("revisions: 1 values revised") for n in result["notes"])
 
 
 # ----------------------------------------------------------------------------
@@ -156,4 +158,55 @@ def test_catalogue_fields_are_copied_and_blanks_become_null(tmp_path):
     meta = json.loads((tmp_path / "metadata" / "test_x_s_monthly.json").read_text(encoding="utf-8"))
     assert meta["update_frequency"] == "monthly"
     assert all(meta[f] is None for f in ["refresh_schedule", "revision_policy", "priority", "known_limitations"])
-    assert meta["primary_key"] == ["date", "geography", "series"] and "extra" not in meta
+    assert meta["primary_key"] == ["date", "geography", "series_id"] and "extra" not in meta
+
+
+# ----------------------------------------------------------------------------
+# Week 5: stable series IDs, status categories, the team standard's reproducibility rule
+# ----------------------------------------------------------------------------
+
+def test_series_identity_fails_when_an_id_has_two_labels():
+    clash = pd.concat([frame(["2026-08-01"], series="a", series_id="v1"), frame(["2026-09-01"], series="b", series_id="v1")])
+    assert checks.check_series_identity(clash)["status"] == "fail"
+    ok = pd.concat([frame(["2026-08-01"], series="a", series_id="v1"), frame(["2026-08-01"], series="b", series_id="v2")])
+    assert checks.check_series_identity(ok)["status"] == "pass"
+    assert checks.check_series_identity(frame(["2026-08-01"], series_id=" "))["status"] == "warn"
+
+
+def test_status_symbols_get_a_standard_category_and_the_symbol_is_kept():
+    status = pd.Series(["", "..", "x", "F", "E", "ZZ"])
+    assert checks.status_category(status).tolist() == ["", "not_available", "suppressed", "unreliable",
+                                                       "quality_flag", "unknown"]
+
+
+def test_missing_values_all_explained_are_info_not_pass():
+    explained = frame(["2026-08-01", "2026-09-01"], values=[1.0, float("nan")]).assign(status=["", ".."])
+    assert checks.check_missing(explained, {"..": "not available"})["status"] == "info"
+
+
+def test_revisions_follow_the_series_id_when_a_label_changes():
+    old = frame(["2026-08-01", "2026-09-01"], series="Old label", series_id="v1", values=[1.0, 2.0])
+    new = frame(["2026-08-01", "2026-09-01"], series="New label", series_id="v1", values=[1.0, 2.0])
+    result = checks.check_revisions(old, new)
+    assert result["matched_on"] == "series_id"
+    assert (result["changed_values"], result["removed_observations"], result["relabelled_series"]) == (0, 0, 1)
+
+
+def test_reproducibility_needs_identical_data_on_two_different_days(tmp_path):
+    for day, now in [("20261024", NOW), ("20261024", NOW + timedelta(hours=2))]:
+        finish(hub_core.open_dataset(tmp_path, "test", "test_x_s_monthly", day, b"a"), frame(["2026-09-01"]), now=now)
+    meta = json.loads((tmp_path / "metadata" / "test_x_s_monthly.json").read_text(encoding="utf-8"))
+    assert meta["reproducibility_rating"]["rating"] == "Potential High"  # same day does not count
+    finish(hub_core.open_dataset(tmp_path, "test", "test_x_s_monthly", "20261025", b"a"), frame(["2026-09-01"]),
+           now=NOW + timedelta(days=1))
+    meta = json.loads((tmp_path / "metadata" / "test_x_s_monthly.json").read_text(encoding="utf-8"))
+    assert meta["reproducibility_rating"]["rating"] == "Confirmed High"
+
+
+def test_team_standard_checks_run_on_every_retrieval(tmp_path):
+    finish(hub_core.open_dataset(tmp_path, "test", "test_x_s_monthly", "20261024", b"a"), frame(["2026-09-01"]))
+    meta = json.loads((tmp_path / "metadata" / "test_x_s_monthly.json").read_text(encoding="utf-8"))
+    names = {c["check"] for c in meta["validation"]["checks"]}
+    assert {"key_fields", "missing_share", "metadata_completeness", "series_identity", "future_dates"} <= names
+    assert meta["validation"]["standard"] == "RAI_Metadata_QA_Standard_v1.0"
+    assert meta["primary_key"] == ["date", "geography", "series_id"]

@@ -20,6 +20,8 @@ THE CATALOGUE (sources/statcan_tables.csv)
     geography     Optional. Which place to keep in the processed file.
                   Empty means Canada. Use all to keep every place, or separate
                   several places with ; (e.g. Ontario;Quebec).
+    description   Recommended. One or two sentences on what the table measures and why the hub keeps
+                  it. If empty, the table title is used (the team standard asks for more than the title).
     update_frequency, refresh_schedule, revision_policy, priority, known_limitations
                   Optional. Copied into the metadata record as written (see the README, "Common metadata").
     Leave optional columns empty, but keep the commas.
@@ -27,9 +29,13 @@ THE CATALOGUE (sources/statcan_tables.csv)
 TO RUN ONE TABLE WITHOUT THE CATALOGUE
     python scripts/acquisition/statcan/download_statcan_table.py --table 18-10-0005-01
 
+TO REBUILD THE PROCESSED FILES WITHOUT DOWNLOADING (after a change to the processing code)
+    python scripts/acquisition/statcan/download_statcan_table.py --from-raw
+
 WHAT YOU GET (for each table, named with its dataset ID, e.g. statcan_18100005_cpi_annual)
     raw/         the original data, untouched; a new dated file only when the data changed
-    processed/   a cleaned version: date, geography, series, value, unit, source, dataset_id, status
+    processed/   a cleaned version: date, geography, series, value, unit, source, dataset_id, status,
+                 status_category, geo_code (DGUID), series_id (vector)
     metadata/    a description of the dataset, with validation results and retrieval history
 
 It is safe to run again. Once a table has a metadata record its dataset ID never changes,
@@ -159,6 +165,7 @@ def load_catalogue(path: Path) -> list[dict]:
                 "subject": row.get("subject", ""),
                 "category": row.get("category", ""),
                 "geography": row.get("geography", ""),
+                "description": row.get("description", ""),
                 **hub_core.governance_from(row),
             })
     return tables
@@ -302,7 +309,10 @@ def subject_from_title(title: str) -> str:
 def build_processed(raw: pd.DataFrame, dataset_id: str, geographies: list[str]):
     """Turn the raw Statistics Canada table into the standard layout for the chosen geographies.
 
-    Output columns: date, geography, series, value, unit, source, dataset_id, status
+    Output columns: date, geography, series, value, unit, source, dataset_id, status, status_category,
+    geo_code, series_id. series_id is StatCan's vector (e.g. v2062815), which identifies one series
+    (one geography and one combination of dimensions) and does not change when labels are reworded;
+    geo_code is the geography's DGUID.
     """
     dims = dimension_columns(raw)
     iso_dates = sorted(d for d in (standardize_date(v) for v in raw["REF_DATE"].unique()) if d)
@@ -326,6 +336,7 @@ def build_processed(raw: pd.DataFrame, dataset_id: str, geographies: list[str]):
     value = pd.to_numeric(raw_value, errors="coerce")
     non_numeric = sorted(set(raw_value[value.isna() & raw_value.ne("")]))
     status = subset["STATUS"].str.strip() if "STATUS" in subset.columns else pd.Series("", index=subset.index)
+    blank = pd.Series("", index=subset.index)
 
     processed = pd.DataFrame({
         "date": dates,
@@ -336,6 +347,9 @@ def build_processed(raw: pd.DataFrame, dataset_id: str, geographies: list[str]):
         "source": SOURCE_CODE,
         "dataset_id": dataset_id,
         "status": status,
+        "status_category": checks.status_category(status),
+        "geo_code": subset["DGUID"].str.strip() if "DGUID" in subset.columns else blank,
+        "series_id": subset["VECTOR"].str.strip() if "VECTOR" in subset.columns else blank,
     })
     info = {
         "rows_raw": len(raw),
@@ -366,17 +380,47 @@ def release_time_with_offset(release_time: str | None) -> str | None:
     return local.isoformat(timespec="seconds")
 
 
-def acquire_table(table: dict, root: Path, session, default_geography: str, now: datetime) -> dict:
-    """Run every step for one table. Returns a result dict; raises AcquisitionError on failure."""
+FREQUENCY_CODES = {name: code for code, name in STATCAN_FREQUENCIES.items()}
+
+
+def stored_table(root: Path, pid: str) -> tuple[bytes, dict, str]:
+    """The stored raw file and table details for reprocessing without a download.
+
+    Returns (raw bytes, a stand-in for the getCubeMetadata answer built from the metadata record, raw file name).
+    """
+    records = sorted((root / "metadata").glob(f"{SOURCE_CODE}_{pid}_*.json"))
+    if len(records) != 1:
+        raise AcquisitionError(f"table {pretty_table_number(pid)} needs exactly one metadata record to reprocess "
+                               f"(found {len(records)}); run without --from-raw to download it")
+    previous = hub_core.read_previous_metadata(records[0])
+    raw_bytes = hub_core.stored_raw(root, previous)
+    cube = {
+        "cubeTitleEn": previous.get("dataset_name"),
+        "releaseTime": previous.get("source_last_updated"),
+        "frequencyCode": FREQUENCY_CODES.get(previous.get("frequency")),
+    }
+    return raw_bytes, cube, Path(previous["raw_file_location"]).name
+
+
+def acquire_table(table: dict, root: Path, session, default_geography: str, now: datetime,
+                  from_raw: bool = False) -> dict:
+    """Run every step for one table. Returns a result dict; raises AcquisitionError on failure.
+
+    from_raw=True rebuilds the processed file and metadata from the stored raw file instead of downloading.
+    """
     pid = table["product_id"]
     geography = table.get("geography") or default_geography
     metadata_dir = root / "metadata"
     metadata_dir.mkdir(parents=True, exist_ok=True)
 
-    zip_bytes = download_zip(session, get_zip_url(session, pid))
-    raw_bytes, cube_meta_bytes = extract_csvs(zip_bytes)
+    if from_raw:
+        raw_bytes, cube, raw_name = stored_table(root, pid)
+        cube_meta_bytes = None
+    else:
+        zip_bytes = download_zip(session, get_zip_url(session, pid))
+        raw_bytes, cube_meta_bytes = extract_csvs(zip_bytes)
+        cube = fetch_cube_metadata(session, pid)
     raw = read_raw(raw_bytes)
-    cube = fetch_cube_metadata(session, pid)
 
     # 1. A stable dataset ID.
     frequency, frequency_basis = choose_frequency(cube, raw["REF_DATE"].unique())
@@ -395,7 +439,7 @@ def acquire_table(table: dict, root: Path, session, default_geography: str, now:
                                ".csv", {"_cube_metadata.csv": cube_meta_bytes})
     if id_note:
         ds.notes.append(id_note)
-    if not cube:
+    if not cube and not from_raw:
         ds.notes.append("title, release time and frequency unavailable from the service; subject and frequency "
                         "taken from the catalogue or detected")
 
@@ -404,7 +448,12 @@ def acquire_table(table: dict, root: Path, session, default_geography: str, now:
     schema = checks.schema_of(raw, dims)
     schema_result, schema_version = checks.check_schema(schema, ds.previous.get("schema"), ds.previous.get("schema_version"))
     geographies, geography_result = checks.select_geographies(raw, geography)
-    results = [schema_result, checks.check_row_count(len(raw), cube.get("nbDatapointsCube")), geography_result]
+    if from_raw:
+        row_count = checks.check("row_count", checks.PASS, f"{len(raw)} rows in the stored raw file {raw_name} (checksum "
+                                 "verified against the record); the count was checked against Statistics Canada at download")
+    else:
+        row_count = checks.check_row_count(len(raw), cube.get("nbDatapointsCube"))
+    results = [schema_result, row_count, geography_result]
     if geography_result["status"] == checks.FAIL:
         raise AcquisitionError(f"{geography_result['detail']} (raw file kept: {ds.relative(ds.raw_path)})")
 
@@ -416,7 +465,7 @@ def acquire_table(table: dict, root: Path, session, default_geography: str, now:
     record = {
         "dataset_id": dataset_id,
         "dataset_name": title,
-        "description": title,
+        "description": (table.get("description") or "").strip() or title,
         "source_organization": SOURCE_ORGANIZATION,
         "source_url": TABLE_PAGE.format(pid=pid),
         "source_table_or_series_id": pretty_table_number(pid),
@@ -439,7 +488,7 @@ def acquire_table(table: dict, root: Path, session, default_geography: str, now:
         ds, processed=processed, frequency=frequency, results=results, now=now, record=record,
         source_last_updated=release_time_with_offset(cube.get("releaseTime")), schema=schema,
         schema_version=schema_version, rows_raw=info["rows_raw"], coverage=coverage, validator=VALIDATOR,
-        ai_use_note=AI_USE_NOTE, missing_status=checks.MISSING_STATUS, governance=table,
+        ai_use_note=AI_USE_NOTE, missing_status=checks.MISSING_STATUS, governance=table, reprocessed=from_raw,
     )
 
 
@@ -458,6 +507,9 @@ def main(argv=None, session=None, now=None) -> int:
                         help=f"Catalogue CSV (default: <repo-root>/{CATALOGUE_RELATIVE_PATH.as_posix()}).")
     parser.add_argument("--repo-root", type=Path, default=Path(__file__).resolve().parents[3],
                         help="Hub root folder (default: three levels above this script).")
+    parser.add_argument("--from-raw", action="store_true",
+                        help="Rebuild processed files and metadata from the stored raw files, without downloading "
+                             "(after a change to the processing code). Records no new retrieval.")
     parser.add_argument("--geography", default="Canada",
                         help='Geography kept in processed files (default "Canada"; "all" keeps every geography; '
                              'separate several with ";").')
@@ -473,7 +525,7 @@ def main(argv=None, session=None, now=None) -> int:
             except ValueError:
                 known = {}
             for table in tables:
-                for name in hub_core.GOVERNANCE_FIELDS:
+                for name in [*hub_core.GOVERNANCE_FIELDS, "description"]:
                     table.setdefault(name, known.get(table["product_id"], {}).get(name, ""))
     else:
         if not catalogue_path.exists():
@@ -499,14 +551,15 @@ def main(argv=None, session=None, now=None) -> int:
 
     session = session or requests.Session()
     now = now or datetime.now().astimezone()
-    print(f"Statistics Canada acquisition, {now.isoformat(timespec='seconds')}")
+    print(f"Statistics Canada {'reprocessing from stored raw files' if args.from_raw else 'acquisition'}, "
+          f"{now.isoformat(timespec='seconds')}")
     print(f"Hub folder: {args.repo_root}")
 
     failures = 0
     for table in unique_tables:
         print(f"\nTable {pretty_table_number(table['product_id'])}")
         try:
-            result = acquire_table(table, args.repo_root, session, args.geography, now)
+            result = acquire_table(table, args.repo_root, session, args.geography, now, from_raw=args.from_raw)
         except AcquisitionError as exc:
             failures += 1
             print(f"  FAILED: {exc}")

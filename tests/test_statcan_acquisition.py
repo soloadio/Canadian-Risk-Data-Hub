@@ -246,3 +246,46 @@ def test_one_off_table_run_keeps_the_catalogue_fields(tmp_path):
     meta = metadata(tmp_path)
     assert meta["update_frequency"] == "biennial" and meta["known_limitations"] == "survey became biennial"
     assert meta["access_format"].startswith("CSV")
+
+
+# ----------------------------------------------------------------------------
+# Week 5: stable identifiers and reprocessing without a download
+# ----------------------------------------------------------------------------
+
+class NoNetwork:
+    """A session that fails the test if anything is downloaded."""
+
+    def get(self, url, **kwargs):
+        raise AssertionError(f"tried to download {url}")
+
+    post = get
+
+
+def test_processed_file_keeps_vector_dguid_and_status_category(tmp_path):
+    rows = make_rows()
+    rows[0].update(VALUE="", STATUS="x")
+    run(tmp_path, FakeStatCan(to_csv(rows)))
+    processed = pd.read_csv(tmp_path / metadata(tmp_path)["processed_file_location"], dtype=str, keep_default_na=False)
+    assert (processed["series_id"].str.startswith("v")).all()
+    assert set(processed["geo_code"]) == {"2016A000011124"}
+    assert processed.loc[processed["status"] == "x", "status_category"].tolist() == ["suppressed"]
+
+
+def test_from_raw_rebuilds_without_downloading_or_logging_a_retrieval(tmp_path):
+    run(tmp_path, FakeStatCan(to_csv(make_rows())))
+    before = metadata(tmp_path)
+    assert dst.main(["--repo-root", str(tmp_path), "--table", "11-10-0222-01", "--from-raw"], session=NoNetwork(),
+                    now=NOW + timedelta(days=3)) == 0
+    after = metadata(tmp_path)
+    assert after["retrieval_history"] == before["retrieval_history"]
+    assert after["last_retrieved"] == before["last_retrieved"]
+    assert after["validation"]["mode"].startswith("reprocessed")
+
+
+def test_from_raw_refuses_an_edited_raw_file(tmp_path, capsys):
+    run(tmp_path, FakeStatCan(to_csv(make_rows())))
+    raw = tmp_path / metadata(tmp_path)["raw_file_location"]
+    raw.write_bytes(raw.read_bytes() + b"\n")
+    assert dst.main(["--repo-root", str(tmp_path), "--table", "11-10-0222-01", "--from-raw"], session=NoNetwork(),
+                    now=NOW) == 1
+    assert "no longer matches its recorded checksum" in capsys.readouterr().out

@@ -31,6 +31,7 @@ import requests
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "validation"))
 import hub_checks as checks  # noqa: E402  (lives in scripts/validation/)
+import rai_checks  # noqa: E402  (the team standard's add-on checks, scripts/validation/)
 
 TIMEOUT_SECONDS = 60
 MAX_ATTEMPTS = 3
@@ -169,6 +170,18 @@ def store_raw(root: Path, raw_dir: Path, dataset_id: str, stamp: str, raw_bytes:
     return raw_path, True
 
 
+def stored_raw(root: Path, previous: dict) -> bytes:
+    """The latest raw file on record, for reprocessing without a download. Its checksum must match the record."""
+    location = previous.get("raw_file_location")
+    if not location or not (root / location).is_file():
+        raise AcquisitionError(f"no stored raw file to reprocess ({location!r}); run without --from-raw to download it")
+    data = (root / location).read_bytes()
+    if sha256_of(data) != previous.get("checksum"):
+        raise AcquisitionError(f"the stored raw file {location} no longer matches its recorded checksum; "
+                               "download again instead of reprocessing")
+    return data
+
+
 def script_location(script: str | Path, root: Path) -> str:
     """Path of a script relative to the hub folder (just the file name if it lives elsewhere)."""
     here = Path(script).resolve()
@@ -188,21 +201,27 @@ def governance_from(row: dict) -> dict:
 
 
 def reproducibility_rating(history: list[dict]) -> dict:
-    """'Confirmed High' once two retrievals produced byte-identical raw data (same checksum), else 'Potential High'.
+    """'Confirmed High' once retrievals on at least two different days produced byte-identical raw data
+    (same checksum), else 'Potential High'.
 
-    This is the rule from the team's source inventory standard (W1-AAH-02): reproducibility is confirmed
-    by two verified repeat downloads with matching hashes.
+    This is the rule in the team's metadata and QA standard (RAI_Metadata_QA_Standard_v1.0, Ayesha Malhi,
+    "Reproducibility"): same-day repeats do not test stability, so they rate Potential High.
     """
     if not history:
         return {"rating": "Potential High", "basis": "no retrieval on record yet"}
     latest = history[-1]["checksum"]
     matching = [h for h in history if h.get("checksum") == latest]
-    if len(matching) >= 2:
-        days = sorted({(h.get("retrieved") or "")[:10] for h in matching})
+    days = sorted({(h.get("retrieved") or "")[:10] for h in matching})
+    if len(days) >= 2:
         return {"rating": "Confirmed High",
-                "basis": f"{len(matching)} retrievals produced the same raw data ({latest[:19]}...), on {', '.join(days)}"}
+                "basis": f"{len(matching)} retrievals on {len(days)} different days produced the same raw data "
+                         f"({latest[:19]}...): {', '.join(days)}"}
+    if len(matching) >= 2:
+        return {"rating": "Potential High",
+                "basis": f"{len(matching)} identical retrievals, all on {days[0]}; a retrieval with the same checksum "
+                         "on another day confirms it"}
     return {"rating": "Potential High",
-            "basis": "the latest raw data has been retrieved once; a repeat download with the same checksum confirms it"}
+            "basis": "the latest raw data has been retrieved once; a retrieval with the same checksum on another day confirms it"}
 
 
 def quality_summary(rows_raw: int, rows_processed: int, coverage: str, results: list[dict], status: str) -> str:
@@ -216,6 +235,9 @@ def quality_summary(rows_raw: int, rows_processed: int, coverage: str, results: 
     warned = [f"{r['check']}: {r['detail']}" for r in results if r["status"] == checks.WARN and r["check"] != "missing_values"]
     if warned:
         parts.append("Warnings: " + " | ".join(warned))
+    noted = [r["check"] for r in results if r["status"] == checks.INFO and r["check"] != "missing_values"]
+    if noted:
+        parts.append(f"Notes (INFO, see validation): {', '.join(noted)}.")
     return " ".join(p for p in parts if p)
 
 
@@ -272,13 +294,17 @@ def open_dataset(root: Path, source_code: str, dataset_id: str, stamp: str, raw_
 def finish_dataset(ds: Dataset, *, processed, frequency: str, results: list[dict], now: datetime,
                    record: dict, source_last_updated: str | None, schema: dict, schema_version: int,
                    rows_raw: int, coverage: str, validator: str, ai_use_note: str,
-                   missing_status: dict[str, str] | None = None, governance: dict | None = None) -> dict:
+                   missing_status: dict[str, str] | None = None, governance: dict | None = None,
+                   reprocessed: bool = False) -> dict:
     """Run the common checks, then write the processed file and the metadata record.
 
     results holds the adapter's own checks, already run. record holds the publisher-specific fields
     of the metadata record, in order (dataset_id through units); the retrieval, quality and history
     fields are added here so every publisher's record has the same shape. governance holds the
     catalogue's GOVERNANCE_FIELDS for the dataset.
+    reprocessed=True means the raw data was not downloaded but read back from the stored raw file
+    (after a change to the processing code): the processed file and record are rebuilt, but no
+    retrieval is added to the history and last_retrieved keeps the date of the actual download.
     If any check fails, AcquisitionError is raised and the previous processed file and metadata stay as they were.
     """
     processed, processed_results = checks.check_processed(processed, frequency, missing_status)
@@ -287,27 +313,27 @@ def finish_dataset(ds: Dataset, *, processed, frequency: str, results: list[dict
         checks.check_revisions(previous_processed, processed),
         checks.check_freshness(record.get("observation_end"), frequency, now),
     ]
-    status = checks.overall_status(results)
-    if status == "failed":
-        raise AcquisitionError("validation failed, processed file and metadata left unchanged "
-                               f"(raw file kept: {ds.relative(ds.raw_path)}):\n    " + "\n    ".join(checks.failures(results)))
-
-    atomic_write_bytes(ds.processed_path, processed.to_csv(index=False, na_rep="").encode("utf-8"))
 
     changed = None if ds.previous_checksum is None else ds.previous_checksum != ds.checksum
-    history = ds.history + [{
-        "retrieved": iso(now),
-        "checksum": ds.checksum,
-        "raw_file": ds.relative(ds.raw_path),
-        "source_last_updated": source_last_updated,
-        "data_changed": changed,
-        "schema_version": schema_version,
-        "validation_status": status,
-    }]
+    if reprocessed:
+        history = list(ds.history)
+        last_retrieved = ds.previous.get("last_retrieved")
+        changed = False
+    else:
+        history = ds.history + [{
+            "retrieved": iso(now),
+            "checksum": ds.checksum,
+            "raw_file": ds.relative(ds.raw_path),
+            "source_last_updated": source_last_updated,
+            "data_changed": changed,
+            "schema_version": schema_version,
+            "validation_status": None,  # filled in below, once every check has run
+        }]
+        last_retrieved = iso(now)
     governance = {name: ((governance or {}).get(name) or None) for name in GOVERNANCE_FIELDS}
     metadata = dict(record)
     metadata.update({
-        "last_retrieved": iso(now),
+        "last_retrieved": last_retrieved,
         "raw_file_location": ds.relative(ds.raw_path),
         "processed_file_location": ds.relative(ds.processed_path),
         "update_frequency": governance["update_frequency"],
@@ -315,22 +341,36 @@ def finish_dataset(ds: Dataset, *, processed, frequency: str, results: list[dict
         "revision_policy": governance["revision_policy"],
         "source_last_updated": source_last_updated,
         "checksum": ds.checksum,
-        "primary_key": checks.OBSERVATION_KEY,
+        "primary_key": checks.PRIMARY_KEY,
         "reproducibility_rating": reproducibility_rating(history),
         "schema_version": schema_version,
         "schema": schema,
-        "quality_notes": quality_summary(rows_raw, len(processed), coverage, results, status),
+        "quality_notes": None,       # filled in below, once every check has run
         "known_limitations": governance["known_limitations"],
         "priority": governance["priority"],
-        "validation": {
-            "status": status,
-            "run_at": iso(now),
-            "validator": validator,
-            "checks": results,
-        },
+        "validation": None,          # filled in below
         "retrieval_history": history,
         "ai_use_note": ai_use_note,
     })
+    # The team standard's add-on checks look at the table and at the finished record.
+    results = results + rai_checks.run_rai_checks(processed, metadata, now, filled_later=("validation", "quality_notes"))
+    status = checks.overall_status(results)
+    if status == "failed":
+        raise AcquisitionError("validation failed, processed file and metadata left unchanged "
+                               f"(raw file kept: {ds.relative(ds.raw_path)}):\n    " + "\n    ".join(checks.failures(results)))
+    if not reprocessed:
+        history[-1]["validation_status"] = status
+    metadata["quality_notes"] = quality_summary(rows_raw, len(processed), coverage, results, status)
+    metadata["validation"] = {
+        "status": status,
+        "run_at": iso(now),
+        "validator": validator,
+        "standard": "RAI_Metadata_QA_Standard_v1.0",
+        "mode": "reprocessed from the stored raw file (no download)" if reprocessed else "retrieval",
+        "checks": results,
+    }
+
+    atomic_write_bytes(ds.processed_path, processed.to_csv(index=False, na_rep="").encode("utf-8"))
     atomic_write_bytes(ds.metadata_path, (json.dumps(metadata, indent=2, ensure_ascii=False) + "\n").encode("utf-8"))
 
     return {
@@ -343,7 +383,9 @@ def finish_dataset(ds: Dataset, *, processed, frequency: str, results: list[dict
         "raw_megabytes": ds.raw_path.stat().st_size / 1e6,
         "changed": changed,
         "validation_status": status,
+        "reprocessed": reprocessed,
         "warnings": ds.notes + checks.warnings_of(results),
+        "notes": checks.notes_of(results),
     }
 
 
@@ -352,8 +394,12 @@ def print_result(result: dict) -> None:
     change = {None: "first retrieval", True: "DATA CHANGED since last retrieval",
               False: "unchanged since last retrieval"}[result["changed"]]
     stored = "new raw file" if result["raw_written"] else "raw file already stored, not copied again"
+    if result.get("reprocessed"):
+        change, stored = "reprocessed from the stored raw file, nothing downloaded", "checksum verified"
     print(f"  SUCCESS: {result['dataset_id']} ({result['frequency']}), validation {result['validation_status'].replace('_', ' ')}")
     print(f"  {result['rows_raw']} raw rows ({result['raw_megabytes']:.1f} MB), {result['rows_processed']} processed rows, {change}")
     print(f"  raw file: {result['raw_path']} ({stored})")
     for warning in result["warnings"]:
         print(f"  warning: {warning}")
+    for note in result.get("notes", []):
+        print(f"  note: {note}")

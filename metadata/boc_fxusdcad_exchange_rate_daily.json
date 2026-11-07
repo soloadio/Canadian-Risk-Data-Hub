@@ -19,24 +19,24 @@
   "frequency": "daily",
   "frequency_basis": "declared by Bank of Canada (Business daily)",
   "observation_start": "2017-01-03",
-  "observation_end": "2026-10-23",
+  "observation_end": "2026-11-06",
   "units": "Canadian dollars per US dollar",
-  "last_retrieved": "2026-10-24T22:42:30-04:00",
-  "raw_file_location": "raw/boc/boc_fxusdcad_exchange_rate_daily/boc_fxusdcad_exchange_rate_daily_20261024.json",
+  "last_retrieved": "2026-11-07T15:47:23-05:00",
+  "raw_file_location": "raw/boc/boc_fxusdcad_exchange_rate_daily/boc_fxusdcad_exchange_rate_daily_20261107.json",
   "processed_file_location": "processed/boc/boc_fxusdcad_exchange_rate_daily/boc_fxusdcad_exchange_rate_daily.csv",
   "update_frequency": "business daily; published around 16:30 ET",
   "refresh_schedule": "17:15 ET same day and 11:30 ET next morning on business days (CRON_TZ=America/Toronto)",
-  "revision_policy": "Not revised",
+  "revision_policy": "none",
   "source_last_updated": null,
-  "checksum": "sha256:fc544e382d7b9451b3071be13b452455d28a91d0f848a2a08b55d53f3166bde9",
+  "checksum": "sha256:2efc584e2bf708225b85c1fd3c0a1dbc0839cd34d38793de3e7c8a906301aa66",
   "primary_key": [
     "date",
     "geography",
-    "series"
+    "series_id"
   ],
   "reproducibility_rating": {
-    "rating": "Confirmed High",
-    "basis": "2 retrievals produced the same raw data (sha256:fc544e382d7b...), on 2026-10-24"
+    "rating": "Potential High",
+    "basis": "the latest raw data has been retrieved once; a retrieval with the same checksum on another day confirms it"
   },
   "schema_version": 1,
   "schema": {
@@ -49,13 +49,15 @@
       "Canadian dollars per US dollar"
     ]
   },
-  "quality_notes": "2447 rows in raw file; 2447 rows in processed file (Canada). Missing values: 0 of 2447 observations have no value (0.0%): none. Validation passed.",
-  "known_limitations": "Indicative daily average of quotes from 08:00 to 16:00 ET, not a transaction or fixing rate; the Bank says it is for statistical and analytical purposes only. Valet history starts 2017-01-03. Not published on market holidays",
+  "quality_notes": "2457 rows in raw file; 2457 rows in processed file (Canada). Missing values: 0 of 2457 observations have no value (0.0%): none. Validation passed. Notes (INFO, see validation): metadata_completeness.",
+  "known_limitations": "Not revised. Indicative daily average of quotes from 08:00 to 16:00 ET, not a transaction or fixing rate; the Bank says it is for statistical and analytical purposes only. Valet history starts 2017-01-03. Not published on market holidays",
   "priority": "high",
   "validation": {
     "status": "passed",
-    "run_at": "2026-10-24T22:42:30-04:00",
+    "run_at": "2026-11-07T15:53:18-05:00",
     "validator": "scripts/validation/hub_checks.py",
+    "standard": "RAI_Metadata_QA_Standard_v1.0",
+    "mode": "reprocessed from the stored raw file (no download)",
     "checks": [
       {
         "check": "schema",
@@ -70,9 +72,9 @@
       {
         "check": "series_present",
         "status": "pass",
-        "detail": "all 1 series returned (FXUSDCAD: 2447 values)",
+        "detail": "all 1 series returned (FXUSDCAD: 2457 values)",
         "values_by_series": {
-          "FXUSDCAD": 2447
+          "FXUSDCAD": 2457
         }
       },
       {
@@ -96,14 +98,9 @@
         "detail": "no observation carried an empty value"
       },
       {
-        "check": "future_dates",
-        "status": "pass",
-        "detail": "no observation dated after 2026-10-24"
-      },
-      {
         "check": "processed_layout",
         "status": "pass",
-        "detail": "2447 rows with the standard columns"
+        "detail": "2457 rows with the standard columns"
       },
       {
         "check": "duplicates",
@@ -113,9 +110,16 @@
         "conflicting_rows": 0
       },
       {
+        "check": "series_identity",
+        "status": "pass",
+        "detail": "1 series, each with one stable series_id and one label",
+        "series": 1,
+        "rows_without_id": 0
+      },
+      {
         "check": "missing_values",
         "status": "pass",
-        "detail": "0 of 2447 observations have no value (0.0%): none",
+        "detail": "0 of 2457 observations have no value (0.0%): none",
         "missing": 0,
         "missing_by_status": {},
         "unexplained": 0,
@@ -124,7 +128,7 @@
       {
         "check": "date_gaps",
         "status": "pass",
-        "detail": "no series goes more than 7 days without an observation (2017-01-03 to 2026-10-23)",
+        "detail": "no series goes more than 7 days without an observation (2017-01-03 to 2026-11-06)",
         "longest_gap_days": 5,
         "series_with_gaps": 0
       },
@@ -134,14 +138,74 @@
         "detail": "no earlier value changed or disappeared; 0 new observations",
         "changed_values": 0,
         "removed_observations": 0,
-        "new_observations": 0
+        "new_observations": 0,
+        "relabelled_series": 0,
+        "matched_on": "series_id"
       },
       {
         "check": "freshness",
         "status": "pass",
-        "detail": "latest observation is 2026-10-23 (1 day old, limit 7)",
+        "detail": "latest observation is 2026-11-06 (1 day old, limit 7)",
         "age_days": 1,
         "limit_days": 7
+      },
+      {
+        "check": "key_fields",
+        "status": "pass",
+        "detail": "no empty values in ['date', 'geography', 'series', 'dataset_id']"
+      },
+      {
+        "check": "missing_share",
+        "status": "pass",
+        "detail": "0 of 2457 values empty (0.0%; limit 5%)",
+        "missing": 0,
+        "share": 0.0
+      },
+      {
+        "check": "value_range",
+        "status": "pass",
+        "detail": "no unit with a default range"
+      },
+      {
+        "check": "percent_convention",
+        "status": "pass",
+        "detail": "no percentage values (standard errors excluded)"
+      },
+      {
+        "check": "status_symbols",
+        "status": "pass",
+        "detail": "no status symbols"
+      },
+      {
+        "check": "unit_consistency",
+        "status": "pass",
+        "detail": "one unit per series (1 series)"
+      },
+      {
+        "check": "future_dates",
+        "status": "pass",
+        "detail": "no observation dated after 2026-11-07"
+      },
+      {
+        "check": "period_change",
+        "status": "pass",
+        "detail": "no change beyond 8 robust standard deviations in 2456 period-over-period changes",
+        "flagged": 0,
+        "changes": 2456
+      },
+      {
+        "check": "metadata_completeness",
+        "status": "info",
+        "detail": "all 32 Required keys filled; Recommended keys empty: ['source_last_updated']",
+        "missing": [],
+        "recommended_missing": [
+          "source_last_updated"
+        ]
+      },
+      {
+        "check": "metadata_consistency",
+        "status": "pass",
+        "detail": "dataset_id and observation dates agree with the metadata record"
       }
     ]
   },
@@ -161,6 +225,15 @@
       "raw_file": "raw/boc/boc_fxusdcad_exchange_rate_daily/boc_fxusdcad_exchange_rate_daily_20261024.json",
       "source_last_updated": null,
       "data_changed": false,
+      "schema_version": 1,
+      "validation_status": "passed"
+    },
+    {
+      "retrieved": "2026-11-07T15:47:23-05:00",
+      "checksum": "sha256:2efc584e2bf708225b85c1fd3c0a1dbc0839cd34d38793de3e7c8a906301aa66",
+      "raw_file": "raw/boc/boc_fxusdcad_exchange_rate_daily/boc_fxusdcad_exchange_rate_daily_20261107.json",
+      "source_last_updated": null,
+      "data_changed": true,
       "schema_version": 1,
       "validation_status": "passed"
     }

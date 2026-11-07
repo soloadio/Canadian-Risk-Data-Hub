@@ -20,6 +20,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import hub_checks as checks  # noqa: E402
+import rai_checks  # noqa: E402
 
 
 def source_of(dataset_id: str) -> str:
@@ -42,9 +43,12 @@ def validate_dataset(metadata_path: Path, root: Path, now: datetime | None = Non
         return "skipped", [checks.check("processed_file", checks.WARN,
                                         f"{processed_path} not found; run the acquisition script first")]
     frequency = metadata.get("frequency", "")
-    _, results = checks.check_processed(checks.read_processed(processed_path), frequency,
-                                        missing_status_for(source_of(metadata["dataset_id"])))
-    results.append(checks.check_freshness(metadata.get("observation_end"), frequency, now or datetime.now().astimezone()))
+    now = now or datetime.now().astimezone()
+    processed, results = checks.check_processed(checks.read_processed(processed_path), frequency,
+                                                missing_status_for(source_of(metadata["dataset_id"])))
+    results.append(checks.check_freshness(metadata.get("observation_end"), frequency, now))
+    # The team standard's add-on checks, as the acquisition scripts run them.
+    results += rai_checks.run_rai_checks(processed, metadata, now)
     return checks.overall_status(results), results
 
 
@@ -76,7 +80,7 @@ def main(argv=None, sources: list[str] | None = None) -> int:
             continue
         status, results = validate_dataset(path, args.repo_root)
         for r in results:
-            print(f"  {r['status'].upper():4}  {r['check']}: {r['detail']}")
+            print(f"  {rai_checks.SEVERITY.get(r['status'], r['status']):7}  {r['check']}: {r['detail']}")
         print(f"  => {status}")
         failed += status == "failed"
     return 1 if failed else 0

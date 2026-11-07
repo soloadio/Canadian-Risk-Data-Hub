@@ -10,8 +10,8 @@ HOW TO USE
 THE CATALOGUE (sources/boc_series.csv)
     One row per dataset. Keep the first line as it is:
 
-        series_ids,id_part,subject,name,category,update_frequency,refresh_schedule,revision_policy,priority,known_limitations
-        V39079,,policy_rate,,interest_rates,business daily,11:30 ET business days,Not revised,high,
+        series_ids,id_part,subject,name,category,description,update_frequency,refresh_schedule,revision_policy,priority,known_limitations
+        V39079,,policy_rate,,interest_rates,,business daily,11:30 ET business days,none,high,Not revised
         BD.CDN.2YR.DQ.YLD;BD.CDN.10YR.DQ.YLD,bdcdnyld,bond_yields,Benchmark bond yields,interest_rates,...
 
     series_ids        Required. One Valet series name, or several separated by ; to keep them in one dataset.
@@ -20,15 +20,20 @@ THE CATALOGUE (sources/boc_series.csv)
     subject           Required. One or two words for the dataset ID, e.g. policy_rate.
     name              Optional for one series (the Bank's label is used); recommended for several.
     category          Optional. A grouping label, e.g. interest_rates.
+    description       Optional. Overrides the Bank's own description of the series.
     update_frequency, refresh_schedule, revision_policy, priority, known_limitations
                       Optional. Copied into the metadata record as written (see the README, "Common metadata").
 
 TO RUN SOME DATASETS ONLY
     python scripts/acquisition/boc/download_boc_series.py --only policy_rate --only corra
 
+TO REBUILD THE PROCESSED FILES WITHOUT DOWNLOADING (after a change to the processing code)
+    python scripts/acquisition/boc/download_boc_series.py --from-raw
+
 WHAT YOU GET (for each dataset, named with its dataset ID, e.g. boc_v39079_policy_rate_daily)
     raw/boc/<id>/        the Valet JSON response, unchanged; a new dated file only when the data changed
-    processed/boc/<id>/  date, geography, series, value, unit, source, dataset_id, status
+    processed/boc/<id>/  date, geography, series, value, unit, source, dataset_id, status, status_category,
+                         geo_code (blank: the Bank publishes no geography code), series_id (the Valet series name)
     metadata/<id>.json   a description of the dataset, with validation results and retrieval history
 
 Every run downloads each series' full history (a few hundred kB at most), so the raw file is always
@@ -65,7 +70,7 @@ SOURCE_CODE = "boc"
 CATALOGUE_RELATIVE_PATH = Path("sources") / "boc_series.csv"
 HEADERS = {"User-Agent": "rai-risk-data-hub/0.3 (student proof of concept)"}
 VALIDATOR = "scripts/validation/hub_checks.py"
-CATALOGUE_COLUMNS = ["series_ids", "id_part", "subject", "name", "category", *hub_core.GOVERNANCE_FIELDS]
+CATALOGUE_COLUMNS = ["series_ids", "id_part", "subject", "name", "category", "description", *hub_core.GOVERNANCE_FIELDS]
 
 # Provenance written into every metadata record (see the README, "Common metadata").
 SOURCE_ORGANIZATION = "Bank of Canada"
@@ -128,6 +133,7 @@ def load_catalogue(path: Path) -> list[dict]:
                 "subject": subject,
                 "name": row.get("name", ""),
                 "category": row.get("category", ""),
+                "description": row.get("description", ""),
                 **hub_core.governance_from(row),
             })
     return datasets
@@ -194,7 +200,9 @@ def build_processed(payload: dict, dataset_id: str, series_ids: list[str]):
 
     One row per date and series where the Bank published a value. Holidays, when the Bank omits a
     market series from that date, produce no row (not an empty value).
-    Output columns: date, geography, series, value, unit, source, dataset_id, status
+    Output columns: date, geography, series, value, unit, source, dataset_id, status, status_category,
+    geo_code, series_id. series_id is the Valet series name (e.g. BD.CDN.10YR.DQ.YLD), which stays the
+    same if the Bank rewords the label.
     """
     details = payload["seriesDetail"]
     rows, unparsed, non_numeric, empty = [], set(), set(), 0
@@ -219,8 +227,10 @@ def build_processed(payload: dict, dataset_id: str, series_ids: list[str]):
             status = ";".join(f"{k}={v}" for k, v in cell.items() if k != "v")
             rows.append({"date": date, "geography": "Canada", "series": details.get(sid, {}).get("label") or sid,
                          "value": value, "unit": unit_of(details.get(sid, {})), "source": SOURCE_CODE,
-                         "dataset_id": dataset_id, "status": status, "_series_id": sid})
-    processed = pd.DataFrame(rows, columns=checks.PROCESSED_COLUMNS + ["_series_id"])
+                         "dataset_id": dataset_id, "status": status, "status_category": "", "geo_code": "",
+                         "series_id": sid})
+    processed = pd.DataFrame(rows, columns=checks.PROCESSED_COLUMNS)
+    processed["status_category"] = checks.status_category(processed["status"])
     dates = sorted(d for d in processed["date"] if ISO_DATE.match(d))
     info = {
         "rows_raw": len(payload["observations"]),
@@ -230,9 +240,9 @@ def build_processed(payload: dict, dataset_id: str, series_ids: list[str]):
         "unparsed_dates": sorted(unparsed),
         "non_numeric": sorted(non_numeric),
         "empty_values": empty,
-        "values_by_series": processed["_series_id"].value_counts().to_dict(),
+        "values_by_series": processed["series_id"].value_counts().to_dict(),
     }
-    return processed.drop(columns="_series_id"), info
+    return processed, info
 
 
 # ----------------------------------------------------------------------------
@@ -262,15 +272,6 @@ def check_units(payload: dict, series_ids: list[str]) -> dict:
     return checks.check("units", checks.PASS, f"all series in {distinct[0]}")
 
 
-def check_future_dates(processed: pd.DataFrame, now: datetime) -> dict:
-    """No observation is dated after the retrieval day (a sign of a misread date)."""
-    today = now.date().isoformat()
-    future = sorted(d for d in processed["date"].unique() if ISO_DATE.match(d) and d > today)
-    if future:
-        return checks.check("future_dates", checks.FAIL, f"{len(future)} observation dates are after today, e.g. {future[:checks.EXAMPLES]}")
-    return checks.check("future_dates", checks.PASS, f"no observation dated after {today}")
-
-
 def check_terms(payload: dict) -> dict:
     url = (payload.get("terms") or {}).get("url")
     if url:
@@ -288,13 +289,25 @@ def check_empty_values(empty: int) -> dict:
 # One dataset, end to end
 # ----------------------------------------------------------------------------
 
-def acquire_dataset(entry: dict, root: Path, session, now: datetime) -> dict:
-    """Run every step for one catalogue row. Returns a result dict; raises AcquisitionError on failure."""
+def stored_response(root: Path, entry: dict) -> bytes:
+    """The stored raw Valet response for a catalogue row, for reprocessing without a download."""
+    records = sorted((root / "metadata").glob(f"{SOURCE_CODE}_{entry['id_part']}_*.json"))
+    if len(records) != 1:
+        raise AcquisitionError(f"series {', '.join(entry['series_ids'])} need exactly one metadata record to reprocess "
+                               f"(found {len(records)}); run without --from-raw to download them")
+    return hub_core.stored_raw(root, hub_core.read_previous_metadata(records[0]))
+
+
+def acquire_dataset(entry: dict, root: Path, session, now: datetime, from_raw: bool = False) -> dict:
+    """Run every step for one catalogue row. Returns a result dict; raises AcquisitionError on failure.
+
+    from_raw=True rebuilds the processed file and metadata from the stored raw file instead of downloading.
+    """
     series_ids = entry["series_ids"]
     metadata_dir = root / "metadata"
     metadata_dir.mkdir(parents=True, exist_ok=True)
 
-    raw_bytes = fetch_observations(session, series_ids)
+    raw_bytes = stored_response(root, entry) if from_raw else fetch_observations(session, series_ids)
     payload = read_payload(raw_bytes)
 
     # 1. A stable dataset ID.
@@ -319,8 +332,7 @@ def acquire_dataset(entry: dict, root: Path, session, now: datetime) -> dict:
     results = [schema_result, check_terms(payload),
                check_series_present(payload, series_ids, info["values_by_series"]),
                check_units(payload, series_ids), checks.check_dates(info["unparsed_dates"]),
-               checks.check_numeric(info["non_numeric"]), check_empty_values(info["empty_values"]),
-               check_future_dates(processed, now)]
+               checks.check_numeric(info["non_numeric"]), check_empty_values(info["empty_values"])]
 
     # 4. Shared checks, then write the processed file and the metadata record.
     labels = [details.get(s, {}).get("label") or s for s in series_ids]
@@ -330,6 +342,7 @@ def acquire_dataset(entry: dict, root: Path, session, now: datetime) -> dict:
     else:
         name = entry["name"] or "; ".join(labels)
         description = "; ".join(f"{s}: {label}" for s, label in zip(series_ids, labels))
+    description = (entry.get("description") or "").strip() or description
     record = {
         "dataset_id": dataset_id,
         "dataset_name": name,
@@ -358,7 +371,7 @@ def acquire_dataset(entry: dict, root: Path, session, now: datetime) -> dict:
         ds, processed=processed, frequency=frequency, results=results, now=now, record=record,
         source_last_updated=None, schema=schema, schema_version=schema_version, rows_raw=info["rows_raw"],
         coverage="Canada", validator=VALIDATOR, ai_use_note=AI_USE_NOTE,
-        governance=entry,
+        governance=entry, reprocessed=from_raw,
     )
 
 
@@ -373,6 +386,9 @@ def main(argv=None, session=None, now=None) -> int:
     )
     parser.add_argument("--only", action="append", metavar="SUBJECT",
                         help="Download only the catalogue rows with this subject, e.g. policy_rate (repeatable).")
+    parser.add_argument("--from-raw", action="store_true",
+                        help="Rebuild processed files and metadata from the stored raw files, without downloading "
+                             "(after a change to the processing code). Records no new retrieval.")
     parser.add_argument("--catalogue", type=Path, default=None,
                         help=f"Catalogue CSV (default: <repo-root>/{CATALOGUE_RELATIVE_PATH.as_posix()}).")
     parser.add_argument("--repo-root", type=Path, default=Path(__file__).resolve().parents[3],
@@ -403,14 +419,14 @@ def main(argv=None, session=None, now=None) -> int:
 
     session = session or requests.Session()
     now = now or datetime.now().astimezone()
-    print(f"Bank of Canada acquisition, {hub_core.iso(now)}")
+    print(f"Bank of Canada {'reprocessing from stored raw files' if args.from_raw else 'acquisition'}, {hub_core.iso(now)}")
     print(f"Hub folder: {args.repo_root}")
 
     failures = 0
     for entry in datasets:
         print(f"\nSeries {', '.join(entry['series_ids'])}")
         try:
-            result = acquire_dataset(entry, args.repo_root, session, now)
+            result = acquire_dataset(entry, args.repo_root, session, now, from_raw=args.from_raw)
         except AcquisitionError as exc:
             failures += 1
             print(f"  FAILED: {exc}")

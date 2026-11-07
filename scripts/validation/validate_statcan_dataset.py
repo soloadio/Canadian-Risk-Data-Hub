@@ -28,9 +28,9 @@ import pandas as pd
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import hub_checks  # noqa: E402
 from hub_checks import (  # noqa: E402,F401  (re-exported for the acquisition script and tests)
-    EXAMPLES, FAIL, OBSERVATION_KEY, PASS, PROCESSED_COLUMNS, SERIES_KEY, WARN, check, check_date_gaps, check_dates,
+    EXAMPLES, FAIL, INFO, OBSERVATION_KEY, PASS, PROCESSED_COLUMNS, SERIES_KEY, WARN, check, check_date_gaps, check_dates,
     check_numeric, check_processed_layout, check_schema, failures, overall_status, period_index, period_label,
-    read_processed, remove_duplicates, warnings_of,
+    read_processed, remove_duplicates, warnings_of, notes_of, status_category, STATUS_CATEGORIES,
 )
 
 # Statistics Canada STATUS codes (from the WDS getCodeSets service, plus "x" for suppression
@@ -124,7 +124,7 @@ def check_terminated(raw_subset: pd.DataFrame) -> dict:
     else:
         count = int(terminated.sum())
     if count:
-        return check("terminated_series", PASS, f"{count} series are marked terminated by Statistics Canada "
+        return check("terminated_series", INFO, f"{count} series are marked terminated by Statistics Canada "
                      "(no longer updated); they are kept with their history", terminated_series=count)
     return check("terminated_series", PASS, "no terminated series", terminated_series=0)
 

@@ -5,7 +5,9 @@ they work the same way for Statistics Canada, the Bank of Canada and any publish
 Checks that depend on how one publisher lays out its raw files live next to that publisher's
 code (for example validate_statcan_dataset.py).
 
-Each check returns a dict: {"check": name, "status": "pass" | "warn" | "fail", "detail": text, ...}.
+Each check returns a dict: {"check": name, "status": "pass" | "info" | "warn" | "fail", "detail": text, ...}.
+The statuses follow the team's metadata and QA standard (RAI_Metadata_QA_Standard_v1.0, Ayesha Malhi):
+pass = PASS, info = INFO (a non-blocking note), warn = WARNING, fail = FAIL.
 """
 from __future__ import annotations
 
@@ -14,12 +16,40 @@ from pathlib import Path
 
 import pandas as pd
 
-PASS, WARN, FAIL = "pass", "warn", "fail"
+PASS, INFO, WARN, FAIL = "pass", "info", "warn", "fail"
 
-PROCESSED_COLUMNS = ["date", "geography", "series", "value", "unit", "source", "dataset_id", "status"]
+# The processed layout. The first eight columns are the Week 1 layout; the last three were added in Week 5:
+#   status_category  the publisher's status symbol translated into the team's standard categories
+#   geo_code         the publisher's official geography code (StatCan DGUID), blank if it has none
+#   series_id        the publisher's stable series identifier (StatCan vector, Bank of Canada series name)
+PROCESSED_COLUMNS = ["date", "geography", "series", "value", "unit", "source", "dataset_id", "status",
+                     "status_category", "geo_code", "series_id"]
 SERIES_KEY = ["geography", "series"]
 OBSERVATION_KEY = ["date", "geography", "series"]
+# The key the metadata record declares: the stable ID instead of the label (check_series_identity makes the
+# two keys equivalent, so the duplicates check on OBSERVATION_KEY enforces this one too).
+PRIMARY_KEY = ["date", "geography", "series_id"]
 EXAMPLES = 5  # how many examples to keep in a check's detail
+
+# Publisher status symbols and their standard category (RAI standard v1.0, "Status symbols").
+# The publisher's own symbol stays in the status column; the category is added beside it.
+STATUS_CATEGORIES = {
+    "..": "not_available",
+    "...": "not_applicable",
+    "x": "suppressed",
+    "F": "unreliable",
+    "A": "quality_flag", "B": "quality_flag", "C": "quality_flag", "D": "quality_flag", "E": "quality_flag",
+    "0s": "rounded_zero",
+    "<LOD": "below_detection",
+}
+# Categories that mean "no value was published".
+ABSENT_CATEGORIES = {"not_available", "not_applicable", "suppressed", "unreliable"}
+
+
+def status_category(status: pd.Series) -> pd.Series:
+    """Standard category for each status symbol: blank when there is no symbol, 'unknown' for a symbol not in the standard."""
+    cleaned = status.fillna("").astype(str).str.strip()
+    return cleaned.map(lambda s: "" if s == "" else STATUS_CATEGORIES.get(s, "unknown"))
 
 # Daily, weekly and biweekly data: a series that goes longer than this without an observation has a gap
 # (a week covers weekends and the longest run of Canadian statutory holidays).
@@ -137,8 +167,40 @@ def check_missing(processed: pd.DataFrame, missing_status: dict[str, str] | None
         problems.append(f"{unexplained} missing values have no status explaining why")
     if contradicting:
         problems.append(f"{contradicting} values are present although their status says they should be absent")
-    return check("missing_values", WARN if problems else PASS, detail + ("; " + "; ".join(problems) if problems else ""),
+    # Missing values that all carry a status are a non-blocking note (INFO in the team standard).
+    status_level = WARN if problems else (INFO if total else PASS)
+    return check("missing_values", status_level, detail + ("; " + "; ".join(problems) if problems else ""),
                  missing=total, missing_by_status=by_status, unexplained=unexplained, contradicting=contradicting)
+
+
+def check_series_identity(processed: pd.DataFrame) -> dict:
+    """Each series_id has one label and each label one series_id, within a geography.
+
+    This is what lets joins use the stable ID while people read the label. A missing series_id is a
+    warning (the publisher gives none, or the adapter does not fill it); a clash is a failure, because
+    a join on either key would then mix different series.
+    """
+    if "series_id" not in processed.columns:
+        return check("series_identity", WARN, "no series_id column; joins must rely on series labels")
+    ids = processed["series_id"].fillna("").astype(str).str.strip()
+    blank = int(ids.eq("").sum())
+    pairs = processed.assign(series_id=ids)[[*SERIES_KEY, "series_id"]].drop_duplicates()
+    pairs = pairs[pairs["series_id"] != ""]
+    labels_per_id = pairs.groupby(["geography", "series_id"])["series"].nunique()
+    ids_per_label = pairs.groupby(SERIES_KEY)["series_id"].nunique()
+    clashes = []
+    if (labels_per_id > 1).any():
+        clashes.append(f"{int((labels_per_id > 1).sum())} series_id values have more than one label, "
+                       f"e.g. {[k[1] for k in labels_per_id[labels_per_id > 1].index[:EXAMPLES]]}")
+    if (ids_per_label > 1).any():
+        clashes.append(f"{int((ids_per_label > 1).sum())} labels have more than one series_id, "
+                       f"e.g. {[k[1] for k in ids_per_label[ids_per_label > 1].index[:EXAMPLES]]}")
+    if clashes:
+        return check("series_identity", FAIL, "; ".join(clashes), series=int(len(pairs)), rows_without_id=blank)
+    if blank:
+        return check("series_identity", WARN, f"{blank} rows have no series_id", series=int(len(pairs)), rows_without_id=blank)
+    return check("series_identity", PASS, f"{len(pairs)} series, each with one stable series_id and one label",
+                 series=int(len(pairs)), rows_without_id=0)
 
 
 def period_index(dates: pd.Series, frequency: str) -> pd.Series | None:
@@ -263,32 +325,49 @@ def check_freshness(observation_end: str | None, frequency: str, now: datetime) 
 def check_revisions(previous: pd.DataFrame | None, processed: pd.DataFrame) -> dict:
     """Compare with the previous processed file: values that changed and observations that disappeared.
 
-    Publishers revise data, so a change is a warning, not a failure. The point is that no earlier
-    value is lost silently: the previous raw file is still stored, and this check says what moved.
+    Publishers revise data, so a change is a note (INFO in the team standard, QA-RV1), not a failure:
+    the point is that no earlier value is lost silently. The previous raw file is still stored, and
+    this check says what moved. Observations are matched on series_id when both files have it, so a
+    series the publisher relabels is reported as relabelled, not as removed and re-added.
     """
     if previous is None or previous.empty:
         return check("revisions", PASS, "no previous processed file to compare with")
     if any(c not in previous.columns for c in [*OBSERVATION_KEY, "value"]):
         return check("revisions", WARN, "the previous processed file does not have the standard columns; not compared")
-    old = previous[[*OBSERVATION_KEY, "value"]].astype({"date": str, "geography": str, "series": str})
-    new = processed[[*OBSERVATION_KEY, "value"]].astype({"date": str, "geography": str, "series": str})
-    merged = old.merge(new, on=OBSERVATION_KEY, how="outer", suffixes=("_old", "_new"), indicator=True)
+
+    def has_ids(frame):
+        return "series_id" in frame.columns and frame["series_id"].fillna("").astype(str).str.strip().ne("").all()
+
+    key = PRIMARY_KEY if has_ids(previous) and has_ids(processed) else OBSERVATION_KEY
+    as_text = {c: str for c in key}
+    old = previous[[*dict.fromkeys([*key, "series"]), "value"]].astype(as_text | {"series": str})
+    new = processed[[*dict.fromkeys([*key, "series"]), "value"]].astype(as_text | {"series": str})
+    merged = old.merge(new, on=key, how="outer", suffixes=("_old", "_new"), indicator=True)
     both = merged[merged["_merge"] == "both"]
     a, b = both["value_old"], both["value_new"]
     changed = both[~((a.isna() & b.isna()) | ((a - b).abs() <= 1e-9 * (1 + a.abs())))]
     removed = merged[merged["_merge"] == "left_only"]
     added = int((merged["_merge"] == "right_only").sum())
-    data = {"changed_values": int(len(changed)), "removed_observations": int(len(removed)), "new_observations": added}
-    if changed.empty and removed.empty:
+    relabelled = []
+    if key == PRIMARY_KEY:
+        pairs = both[["series_id", "series_old", "series_new"]].drop_duplicates()
+        relabelled = [f"{r.series_id}: {r.series_old!r} -> {r.series_new!r}"
+                      for r in pairs[pairs["series_old"] != pairs["series_new"]].itertuples()]
+    label = "series_old" if key == PRIMARY_KEY else "series"
+    data = {"changed_values": int(len(changed)), "removed_observations": int(len(removed)), "new_observations": added,
+            "relabelled_series": len(relabelled), "matched_on": key[-1]}
+    if changed.empty and removed.empty and not relabelled:
         return check("revisions", PASS, f"no earlier value changed or disappeared; {added} new observations", **data)
     details = []
     if len(changed):
-        examples = [f"{r.date} {r.series}: {r.value_old} -> {r.value_new}" for r in changed.head(EXAMPLES).itertuples()]
+        examples = [f"{r.date} {getattr(r, label)}: {r.value_old} -> {r.value_new}" for r in changed.head(EXAMPLES).itertuples()]
         details.append(f"{len(changed)} values revised, e.g. {examples}")
     if len(removed):
-        examples = [f"{r.date} {r.series}" for r in removed.head(EXAMPLES).itertuples()]
+        examples = [f"{r.date} {getattr(r, label)}" for r in removed.head(EXAMPLES).itertuples()]
         details.append(f"{len(removed)} observations no longer published, e.g. {examples}")
-    return check("revisions", WARN, "; ".join(details) + f"; {added} new observations. "
+    if relabelled:
+        details.append(f"{len(relabelled)} series relabelled by the publisher (same series_id), e.g. {relabelled[:EXAMPLES]}")
+    return check("revisions", INFO, "; ".join(details) + f"; {added} new observations. "
                  "The previous version is kept in the earlier raw file", **data)
 
 
@@ -308,7 +387,8 @@ def check_processed(processed: pd.DataFrame, frequency: str,
     if results[0]["status"] == FAIL:
         return processed, results
     processed, duplicates = remove_duplicates(processed)
-    results += [duplicates, check_missing(processed, missing_status), check_date_gaps(processed, frequency)]
+    results += [duplicates, check_series_identity(processed), check_missing(processed, missing_status),
+                check_date_gaps(processed, frequency)]
     return processed, results
 
 
@@ -329,6 +409,10 @@ def failures(results: list[dict]) -> list[str]:
 
 def warnings_of(results: list[dict]) -> list[str]:
     return [f"{r['check']}: {r['detail']}" for r in results if r["status"] == WARN]
+
+
+def notes_of(results: list[dict]) -> list[str]:
+    return [f"{r['check']}: {r['detail']}" for r in results if r["status"] == INFO]
 
 
 def read_processed(path: Path) -> pd.DataFrame:

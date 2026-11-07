@@ -1,7 +1,7 @@
 {
   "dataset_id": "statcan_11100222_household_spending_annual",
   "dataset_name": "Household spending, Canada, regions and provinces",
-  "description": "Household spending, Canada, regions and provinces",
+  "description": "Average annual spending per household by detailed category (about 360 categories and subtotals, from food and shelter to insurance and taxes), from the Survey of Household Spending. The hub uses it to see how much of household budgets goes to essentials such as shelter, which limits how well households can absorb an income shock.",
   "source_organization": "Statistics Canada",
   "source_url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=1110022201",
   "source_table_or_series_id": "11-10-0222-01",
@@ -20,22 +20,22 @@
   "observation_start": "2010-01-01",
   "observation_end": "2023-01-01",
   "units": "Dollars",
-  "last_retrieved": "2026-10-24T22:42:12-04:00",
+  "last_retrieved": "2026-11-07T15:47:33-05:00",
   "raw_file_location": "raw/statcan/statcan_11100222_household_spending_annual/statcan_11100222_household_spending_annual_20261024.csv",
   "processed_file_location": "processed/statcan/statcan_11100222_household_spending_annual/statcan_11100222_household_spending_annual.csv",
   "update_frequency": "biennial (Survey of Household Spending, every second year since 2017)",
   "refresh_schedule": "after each Survey of Household Spending release, 08:30 ET",
-  "revision_policy": null,
+  "revision_policy": "unknown",
   "source_last_updated": "2026-09-18T08:30:00-04:00",
   "checksum": "sha256:50e9f0511225ae5509689128a87846c5ff90fe27f6ff63c20767d3c238d7fd5c",
   "primary_key": [
     "date",
     "geography",
-    "series"
+    "series_id"
   ],
   "reproducibility_rating": {
     "rating": "Confirmed High",
-    "basis": "3 retrievals produced the same raw data (sha256:50e9f0511225...), on 2026-10-10, 2026-10-18, 2026-10-24"
+    "basis": "4 retrievals on 4 different days produced the same raw data (sha256:50e9f0511225...): 2026-10-10, 2026-10-18, 2026-10-24, 2026-11-07"
   },
   "schema_version": 1,
   "schema": {
@@ -65,13 +65,15 @@
       "Dollars"
     ]
   },
-  "quality_notes": "44265 rows in raw file; 3405 rows in processed file (Canada). Missing values: 108 of 3405 observations have no value (3.2%): 87 F (too unreliable to be published), 21 .. (not available for the reference period). Validation passed with warnings. Warnings: date_gaps: 3 annual periods have no data in the whole table: ['2018', '2020', '2022']; 1 series skip periods inside their own date range (1 periods in total), e.g. [\"Canada / Average expenditure per household | Collectors' items (e.g. stamps, coins)\"] | freshness: latest observation is 2023-01-01, 1392 days old; annual data is normally no more than 913 days old. Check whether the source still updates",
-  "known_limitations": "The survey became biennial after 2017, so 2018, 2020 and 2022 are absent from the table. Values are in current dollars (not adjusted for inflation)",
+  "quality_notes": "44265 rows in raw file; 3405 rows in processed file (Canada). Missing values: 108 of 3405 observations have no value (3.2%): 87 F (too unreliable to be published), 21 .. (not available for the reference period). Validation passed with warnings. Warnings: date_gaps: 3 annual periods have no data in the whole table: ['2018', '2020', '2022']; 1 series skip periods inside their own date range (1 periods in total), e.g. [\"Canada / Average expenditure per household | Collectors' items (e.g. stamps, coins)\"] | freshness: latest observation is 2023-01-01, 1406 days old; annual data is normally no more than 913 days old. Check whether the source still updates | period_change: 39 of 2938 changes (1.33%) are unusually large and listed for review (QA-OUT2), e.g. ['2023-01-01 Average expenditure per household | Total expenditure: +1.287e+04', '2023-01-01 Average expenditure per household | Total current consumption: +9020', '2019-01-01 Average expenditure per household | Total expenditure: +7245', '2023-01-01 Average expenditure per household | Shelter: +3395', '2023-01-01 Average expenditure per household | Principal accommodation: +2644'] Notes (INFO, see validation): terminated_series, missing_share, status_symbols, metadata_completeness.",
+  "known_limitations": "The survey became biennial after 2017, so 2018, 2020 and 2022 are absent from the table. Categories changed between 2017 and 2019 (some added, some discontinued), so not every category covers every year. Categories are hierarchical (totals and their components), so they must not be summed. Values are in current dollars (not adjusted for inflation).",
   "priority": null,
   "validation": {
     "status": "passed_with_warnings",
-    "run_at": "2026-10-24T22:42:12-04:00",
+    "run_at": "2026-11-07T15:52:08-05:00",
     "validator": "scripts/validation/validate_statcan_dataset.py",
+    "standard": "RAI_Metadata_QA_Standard_v1.0",
+    "mode": "reprocessed from the stored raw file (no download)",
     "checks": [
       {
         "check": "schema",
@@ -81,7 +83,7 @@
       {
         "check": "row_count",
         "status": "pass",
-        "detail": "44265 rows received, matching the 44265 data points Statistics Canada reports"
+        "detail": "44265 rows in the stored raw file statcan_11100222_household_spending_annual_20261024.csv (checksum verified against the record); the count was checked against Statistics Canada at download"
       },
       {
         "check": "geography",
@@ -102,7 +104,7 @@
       },
       {
         "check": "terminated_series",
-        "status": "pass",
+        "status": "info",
         "detail": "64 series are marked terminated by Statistics Canada (no longer updated); they are kept with their history",
         "terminated_series": 64
       },
@@ -119,8 +121,15 @@
         "conflicting_rows": 0
       },
       {
-        "check": "missing_values",
+        "check": "series_identity",
         "status": "pass",
+        "detail": "363 series, each with one stable series_id and one label",
+        "series": 363,
+        "rows_without_id": 0
+      },
+      {
+        "check": "missing_values",
+        "status": "info",
         "detail": "108 of 3405 observations have no value (3.2%): 87 F (too unreliable to be published), 21 .. (not available for the reference period)",
         "missing": 108,
         "missing_by_status": {
@@ -147,14 +156,79 @@
         "detail": "no earlier value changed or disappeared; 0 new observations",
         "changed_values": 0,
         "removed_observations": 0,
-        "new_observations": 0
+        "new_observations": 0,
+        "relabelled_series": 0,
+        "matched_on": "series_id"
       },
       {
         "check": "freshness",
         "status": "warn",
-        "detail": "latest observation is 2023-01-01, 1392 days old; annual data is normally no more than 913 days old. Check whether the source still updates",
-        "age_days": 1392,
+        "detail": "latest observation is 2023-01-01, 1406 days old; annual data is normally no more than 913 days old. Check whether the source still updates",
+        "age_days": 1406,
         "limit_days": 913
+      },
+      {
+        "check": "key_fields",
+        "status": "pass",
+        "detail": "no empty values in ['date', 'geography', 'series', 'dataset_id']"
+      },
+      {
+        "check": "missing_share",
+        "status": "info",
+        "detail": "108 of 3405 values empty (3.2%; limit 5%)",
+        "missing": 108,
+        "share": 0.0317
+      },
+      {
+        "check": "value_range",
+        "status": "pass",
+        "detail": "no unit with a default range"
+      },
+      {
+        "check": "percent_convention",
+        "status": "pass",
+        "detail": "no percentage values (standard errors excluded)"
+      },
+      {
+        "check": "status_symbols",
+        "status": "info",
+        "detail": "status symbols present (all known): {'F': 87, '..': 21}",
+        "symbols": {
+          "F": 87,
+          "..": 21
+        }
+      },
+      {
+        "check": "unit_consistency",
+        "status": "pass",
+        "detail": "one unit per series (363 series)"
+      },
+      {
+        "check": "future_dates",
+        "status": "pass",
+        "detail": "no observation dated after 2026-11-07"
+      },
+      {
+        "check": "period_change",
+        "status": "warn",
+        "detail": "39 of 2938 changes (1.33%) are unusually large and listed for review (QA-OUT2), e.g. ['2023-01-01 Average expenditure per household | Total expenditure: +1.287e+04', '2023-01-01 Average expenditure per household | Total current consumption: +9020', '2019-01-01 Average expenditure per household | Total expenditure: +7245', '2023-01-01 Average expenditure per household | Shelter: +3395', '2023-01-01 Average expenditure per household | Principal accommodation: +2644']",
+        "flagged": 39,
+        "changes": 2938,
+        "share": 0.0133
+      },
+      {
+        "check": "metadata_completeness",
+        "status": "info",
+        "detail": "all 32 Required keys filled; Recommended keys empty: ['priority']",
+        "missing": [],
+        "recommended_missing": [
+          "priority"
+        ]
+      },
+      {
+        "check": "metadata_consistency",
+        "status": "pass",
+        "detail": "dataset_id and observation dates agree with the metadata record"
       }
     ]
   },
@@ -177,6 +251,15 @@
     },
     {
       "retrieved": "2026-10-24T22:42:12-04:00",
+      "checksum": "sha256:50e9f0511225ae5509689128a87846c5ff90fe27f6ff63c20767d3c238d7fd5c",
+      "raw_file": "raw/statcan/statcan_11100222_household_spending_annual/statcan_11100222_household_spending_annual_20261024.csv",
+      "source_last_updated": "2026-09-18T08:30:00-04:00",
+      "data_changed": false,
+      "schema_version": 1,
+      "validation_status": "passed_with_warnings"
+    },
+    {
+      "retrieved": "2026-11-07T15:47:33-05:00",
       "checksum": "sha256:50e9f0511225ae5509689128a87846c5ff90fe27f6ff63c20767d3c238d7fd5c",
       "raw_file": "raw/statcan/statcan_11100222_household_spending_annual/statcan_11100222_household_spending_annual_20261024.csv",
       "source_last_updated": "2026-09-18T08:30:00-04:00",

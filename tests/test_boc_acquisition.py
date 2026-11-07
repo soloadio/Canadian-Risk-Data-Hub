@@ -185,3 +185,19 @@ def test_series_without_a_published_unit_warn(tmp_path):
 def test_several_series_need_an_id_part(tmp_path, capsys):
     assert run(tmp_path, FakeValet(), rows=[YIELDS_ROW.replace("bdcdnyld", "")]) == 2
     assert "id_part is required" in capsys.readouterr().err
+
+
+def test_processed_file_keeps_the_valet_series_name_as_series_id(tmp_path):
+    assert run(tmp_path, FakeValet(), rows=[YIELDS_ROW]) == 0
+    meta = metadata(tmp_path, "boc_bdcdnyld_bond_yields_daily")
+    processed = pd.read_csv(tmp_path / meta["processed_file_location"], dtype=str, keep_default_na=False)
+    assert set(processed["series_id"]) == set(YIELDS)
+    assert set(processed["geo_code"]) == {""} and set(processed["status_category"]) == {""}
+    assert by_check(meta)["series_identity"]["status"] == "pass"
+
+
+def test_from_raw_rebuilds_from_the_stored_response(tmp_path):
+    run(tmp_path, FakeValet())
+    write_catalogue(tmp_path, [POLICY])
+    assert boc.main(["--repo-root", str(tmp_path), "--from-raw"], session=None, now=NOW + timedelta(days=1)) == 0
+    assert len(metadata(tmp_path)["retrieval_history"]) == 1

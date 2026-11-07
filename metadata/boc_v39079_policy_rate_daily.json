@@ -19,24 +19,24 @@
   "frequency": "daily",
   "frequency_basis": "declared by Bank of Canada (Business daily)",
   "observation_start": "2009-04-21",
-  "observation_end": "2026-10-22",
+  "observation_end": "2026-11-05",
   "units": "Percent",
-  "last_retrieved": "2026-10-24T22:42:30-04:00",
-  "raw_file_location": "raw/boc/boc_v39079_policy_rate_daily/boc_v39079_policy_rate_daily_20261024.json",
+  "last_retrieved": "2026-11-07T15:47:23-05:00",
+  "raw_file_location": "raw/boc/boc_v39079_policy_rate_daily/boc_v39079_policy_rate_daily_20261107.json",
   "processed_file_location": "processed/boc/boc_v39079_policy_rate_daily/boc_v39079_policy_rate_daily.csv",
   "update_frequency": "business daily; changes announced on 8 scheduled dates a year at 09:45 ET, effective the next business day",
   "refresh_schedule": "11:30 ET on business days (CRON_TZ=America/Toronto)",
-  "revision_policy": "Not revised",
+  "revision_policy": "none",
   "source_last_updated": null,
-  "checksum": "sha256:cfde423daba413a4bc21cbf11a7af3f8ca70daf71f782ef83e90cee7651213e2",
+  "checksum": "sha256:53c57094b737f9554ade3192bfe092952edf3231eb0ab12612967384a85caaf1",
   "primary_key": [
     "date",
     "geography",
-    "series"
+    "series_id"
   ],
   "reproducibility_rating": {
-    "rating": "Confirmed High",
-    "basis": "2 retrievals produced the same raw data (sha256:cfde423daba4...), on 2026-10-24"
+    "rating": "Potential High",
+    "basis": "the latest raw data has been retrieved once; a retrieval with the same checksum on another day confirms it"
   },
   "schema_version": 1,
   "schema": {
@@ -49,13 +49,15 @@
       "Percent"
     ]
   },
-  "quality_notes": "4554 rows in raw file; 4554 rows in processed file (Canada). Missing values: 0 of 4554 observations have no value (0.0%): none. Validation passed.",
-  "known_limitations": "A change announced at 09:45 ET takes effect the next business day. Unlike the market series, the rate is also published on holidays (it stays constant). Valet history starts 2009-04-21; earlier values are in the Bank's legacy archives",
+  "quality_notes": "4564 rows in raw file; 4564 rows in processed file (Canada). Missing values: 0 of 4564 observations have no value (0.0%): none. Validation passed. Notes (INFO, see validation): period_change, metadata_completeness.",
+  "known_limitations": "Not revised. A change announced at 09:45 ET takes effect the next business day. Unlike the market series, the rate is also published on holidays (it stays constant). Valet history starts 2009-04-21; earlier values are in the Bank's legacy archives",
   "priority": "high",
   "validation": {
     "status": "passed",
-    "run_at": "2026-10-24T22:42:30-04:00",
+    "run_at": "2026-11-07T15:53:18-05:00",
     "validator": "scripts/validation/hub_checks.py",
+    "standard": "RAI_Metadata_QA_Standard_v1.0",
+    "mode": "reprocessed from the stored raw file (no download)",
     "checks": [
       {
         "check": "schema",
@@ -70,9 +72,9 @@
       {
         "check": "series_present",
         "status": "pass",
-        "detail": "all 1 series returned (V39079: 4554 values)",
+        "detail": "all 1 series returned (V39079: 4564 values)",
         "values_by_series": {
-          "V39079": 4554
+          "V39079": 4564
         }
       },
       {
@@ -96,14 +98,9 @@
         "detail": "no observation carried an empty value"
       },
       {
-        "check": "future_dates",
-        "status": "pass",
-        "detail": "no observation dated after 2026-10-24"
-      },
-      {
         "check": "processed_layout",
         "status": "pass",
-        "detail": "4554 rows with the standard columns"
+        "detail": "4564 rows with the standard columns"
       },
       {
         "check": "duplicates",
@@ -113,9 +110,16 @@
         "conflicting_rows": 0
       },
       {
+        "check": "series_identity",
+        "status": "pass",
+        "detail": "1 series, each with one stable series_id and one label",
+        "series": 1,
+        "rows_without_id": 0
+      },
+      {
         "check": "missing_values",
         "status": "pass",
-        "detail": "0 of 4554 observations have no value (0.0%): none",
+        "detail": "0 of 4564 observations have no value (0.0%): none",
         "missing": 0,
         "missing_by_status": {},
         "unexplained": 0,
@@ -124,7 +128,7 @@
       {
         "check": "date_gaps",
         "status": "pass",
-        "detail": "no series goes more than 7 days without an observation (2009-04-21 to 2026-10-22)",
+        "detail": "no series goes more than 7 days without an observation (2009-04-21 to 2026-11-05)",
         "longest_gap_days": 5,
         "series_with_gaps": 0
       },
@@ -134,14 +138,75 @@
         "detail": "no earlier value changed or disappeared; 0 new observations",
         "changed_values": 0,
         "removed_observations": 0,
-        "new_observations": 0
+        "new_observations": 0,
+        "relabelled_series": 0,
+        "matched_on": "series_id"
       },
       {
         "check": "freshness",
         "status": "pass",
-        "detail": "latest observation is 2026-10-22 (2 days old, limit 7)",
+        "detail": "latest observation is 2026-11-05 (2 days old, limit 7)",
         "age_days": 2,
         "limit_days": 7
+      },
+      {
+        "check": "key_fields",
+        "status": "pass",
+        "detail": "no empty values in ['date', 'geography', 'series', 'dataset_id']"
+      },
+      {
+        "check": "missing_share",
+        "status": "pass",
+        "detail": "0 of 4564 values empty (0.0%; limit 5%)",
+        "missing": 0,
+        "share": 0.0
+      },
+      {
+        "check": "value_range",
+        "status": "pass",
+        "detail": "4564 percentage values within 0-100"
+      },
+      {
+        "check": "percent_convention",
+        "status": "pass",
+        "detail": "percentage series are stored as points"
+      },
+      {
+        "check": "status_symbols",
+        "status": "pass",
+        "detail": "no status symbols"
+      },
+      {
+        "check": "unit_consistency",
+        "status": "pass",
+        "detail": "one unit per series (1 series)"
+      },
+      {
+        "check": "future_dates",
+        "status": "pass",
+        "detail": "no observation dated after 2026-11-07"
+      },
+      {
+        "check": "period_change",
+        "status": "info",
+        "detail": "33 of 4563 changes (0.72%) are unusually large and listed for review (QA-OUT2), e.g. ['2022-07-14 Target for the overnight rate (business daily): +1', '2022-09-08 Target for the overnight rate (business daily): +0.75', '2024-10-24 Target for the overnight rate (business daily): -0.5', '2022-04-14 Target for the overnight rate (business daily): +0.5', '2020-03-16 Target for the overnight rate (business daily): -0.5']",
+        "flagged": 33,
+        "changes": 4563,
+        "share": 0.0072
+      },
+      {
+        "check": "metadata_completeness",
+        "status": "info",
+        "detail": "all 32 Required keys filled; Recommended keys empty: ['source_last_updated']",
+        "missing": [],
+        "recommended_missing": [
+          "source_last_updated"
+        ]
+      },
+      {
+        "check": "metadata_consistency",
+        "status": "pass",
+        "detail": "dataset_id and observation dates agree with the metadata record"
       }
     ]
   },
@@ -161,6 +226,15 @@
       "raw_file": "raw/boc/boc_v39079_policy_rate_daily/boc_v39079_policy_rate_daily_20261024.json",
       "source_last_updated": null,
       "data_changed": false,
+      "schema_version": 1,
+      "validation_status": "passed"
+    },
+    {
+      "retrieved": "2026-11-07T15:47:23-05:00",
+      "checksum": "sha256:53c57094b737f9554ade3192bfe092952edf3231eb0ab12612967384a85caaf1",
+      "raw_file": "raw/boc/boc_v39079_policy_rate_daily/boc_v39079_policy_rate_daily_20261107.json",
+      "source_last_updated": null,
+      "data_changed": true,
       "schema_version": 1,
       "validation_status": "passed"
     }

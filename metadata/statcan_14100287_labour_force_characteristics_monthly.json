@@ -1,7 +1,7 @@
 {
   "dataset_id": "statcan_14100287_labour_force_characteristics_monthly",
   "dataset_name": "Labour force characteristics, monthly, seasonally adjusted and trend-cycle",
-  "description": "Labour force characteristics, monthly, seasonally adjusted and trend-cycle",
+  "description": "Monthly Labour Force Survey estimates of employment, unemployment, the unemployment rate and participation and employment rates, by sex and age group, seasonally adjusted and trend-cycle. The hub uses it to track labour-market stress, a leading driver of household credit risk.",
   "source_organization": "Statistics Canada",
   "source_url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=1410028701",
   "source_table_or_series_id": "14-10-0287-01",
@@ -25,17 +25,17 @@
   "processed_file_location": "processed/statcan/statcan_14100287_labour_force_characteristics_monthly/statcan_14100287_labour_force_characteristics_monthly.csv",
   "update_frequency": "monthly (Labour Force Survey, released early in the following month at 08:30 ET)",
   "refresh_schedule": "on Labour Force Survey release days, after 08:30 ET",
-  "revision_policy": null,
+  "revision_policy": "scheduled",
   "source_last_updated": "2026-10-09T08:30:00-04:00",
   "checksum": "sha256:f36e9919e4967c292ec098be3896ba0d47916782117e2139d217cec87b548019",
   "primary_key": [
     "date",
     "geography",
-    "series"
+    "series_id"
   ],
   "reproducibility_rating": {
     "rating": "Confirmed High",
-    "basis": "3 retrievals produced the same raw data (sha256:f36e9919e496...), on 2026-10-10, 2026-10-18, 2026-10-24"
+    "basis": "3 retrievals on 3 different days produced the same raw data (sha256:f36e9919e496...): 2026-10-10, 2026-10-18, 2026-10-24"
   },
   "schema_version": 1,
   "schema": {
@@ -72,13 +72,15 @@
       "Persons in thousands"
     ]
   },
-  "quality_notes": "5475519 rows in raw file; 633969 rows in processed file (Canada). Missing values: 175958 of 633969 observations have no value (27.8%): 175958 .. (not available for the reference period). Validation passed.",
-  "known_limitations": "The full table is about 1.2 GB raw. Seasonally adjusted and trend-cycle series are published together; choose series by their label",
+  "quality_notes": "5475519 rows in raw file; 633969 rows in processed file (Canada). Missing values: 175958 of 633969 observations have no value (27.8%): 175958 .. (not available for the reference period). Validation passed with warnings. Warnings: missing_share: 175958 of 633969 values empty (27.8%; limit 5%). Above the limit: a reviewer records a disposition (accept with reason, fix or waive) | period_change: 6469 of 456970 changes (1.42%) are unusually large and listed for review (QA-OUT2), e.g. ['2020-04-01 Employment | Total - Gender | 15 years and over | Estimate | Seasonally adjusted: -1972', '2020-04-01 Employment | Total - Gender | 15 to 64 years | Estimate | Seasonally adjusted: -1887', '2020-04-01 Employment | Total - Gender | 15 years and over | Estimate | Unadjusted: -1861', '2020-04-01 Employment | Total - Gender | 15 to 64 years | Estimate | Unadjusted: -1808', '2020-04-01 Employment | Total - Gender | 25 years and over | Estimate | Seasonally adjusted: -1507'] Notes (INFO, see validation): status_symbols, metadata_completeness.",
+  "known_limitations": "Seasonally adjusted estimates are revised each January for the previous three years, and the whole series is revised when population estimates are rebased. Seasonally adjusted and trend-cycle series are published together; choose series by series_id or label. The full table is about 1.2 GB raw.",
   "priority": null,
   "validation": {
-    "status": "passed",
-    "run_at": "2026-10-24T22:42:12-04:00",
+    "status": "passed_with_warnings",
+    "run_at": "2026-11-07T15:52:08-05:00",
     "validator": "scripts/validation/validate_statcan_dataset.py",
+    "standard": "RAI_Metadata_QA_Standard_v1.0",
+    "mode": "reprocessed from the stored raw file (no download)",
     "checks": [
       {
         "check": "schema",
@@ -88,7 +90,7 @@
       {
         "check": "row_count",
         "status": "pass",
-        "detail": "5475519 rows received, matching the 5475519 data points Statistics Canada reports"
+        "detail": "5475519 rows in the stored raw file statcan_14100287_labour_force_characteristics_monthly_20261024.csv (checksum verified against the record); the count was checked against Statistics Canada at download"
       },
       {
         "check": "geography",
@@ -126,8 +128,15 @@
         "conflicting_rows": 0
       },
       {
-        "check": "missing_values",
+        "check": "series_identity",
         "status": "pass",
+        "detail": "1041 series, each with one stable series_id and one label",
+        "series": 1041,
+        "rows_without_id": 0
+      },
+      {
+        "check": "missing_values",
+        "status": "info",
         "detail": "175958 of 633969 observations have no value (27.8%): 175958 .. (not available for the reference period)",
         "missing": 175958,
         "missing_by_status": {
@@ -149,14 +158,78 @@
         "detail": "no earlier value changed or disappeared; 0 new observations",
         "changed_values": 0,
         "removed_observations": 0,
-        "new_observations": 0
+        "new_observations": 0,
+        "relabelled_series": 0,
+        "matched_on": "series_id"
       },
       {
         "check": "freshness",
         "status": "pass",
-        "detail": "latest observation is 2026-09-01 (53 days old, limit 75)",
-        "age_days": 53,
+        "detail": "latest observation is 2026-09-01 (67 days old, limit 75)",
+        "age_days": 67,
         "limit_days": 75
+      },
+      {
+        "check": "key_fields",
+        "status": "pass",
+        "detail": "no empty values in ['date', 'geography', 'series', 'dataset_id']"
+      },
+      {
+        "check": "missing_share",
+        "status": "warn",
+        "detail": "175958 of 633969 values empty (27.8%; limit 5%). Above the limit: a reviewer records a disposition (accept with reason, fix or waive)",
+        "missing": 175958,
+        "share": 0.2775
+      },
+      {
+        "check": "value_range",
+        "status": "pass",
+        "detail": "173178 percentage values within 0-100"
+      },
+      {
+        "check": "percent_convention",
+        "status": "pass",
+        "detail": "percentage series are stored as points"
+      },
+      {
+        "check": "status_symbols",
+        "status": "info",
+        "detail": "status symbols present (all known): {'..': 175958}",
+        "symbols": {
+          "..": 175958
+        }
+      },
+      {
+        "check": "unit_consistency",
+        "status": "pass",
+        "detail": "one unit per series (1041 series)"
+      },
+      {
+        "check": "future_dates",
+        "status": "pass",
+        "detail": "no observation dated after 2026-11-07"
+      },
+      {
+        "check": "period_change",
+        "status": "warn",
+        "detail": "6469 of 456970 changes (1.42%) are unusually large and listed for review (QA-OUT2), e.g. ['2020-04-01 Employment | Total - Gender | 15 years and over | Estimate | Seasonally adjusted: -1972', '2020-04-01 Employment | Total - Gender | 15 to 64 years | Estimate | Seasonally adjusted: -1887', '2020-04-01 Employment | Total - Gender | 15 years and over | Estimate | Unadjusted: -1861', '2020-04-01 Employment | Total - Gender | 15 to 64 years | Estimate | Unadjusted: -1808', '2020-04-01 Employment | Total - Gender | 25 years and over | Estimate | Seasonally adjusted: -1507']",
+        "flagged": 6469,
+        "changes": 456970,
+        "share": 0.0142
+      },
+      {
+        "check": "metadata_completeness",
+        "status": "info",
+        "detail": "all 32 Required keys filled; Recommended keys empty: ['priority']",
+        "missing": [],
+        "recommended_missing": [
+          "priority"
+        ]
+      },
+      {
+        "check": "metadata_consistency",
+        "status": "pass",
+        "detail": "dataset_id and observation dates agree with the metadata record"
       }
     ]
   },
