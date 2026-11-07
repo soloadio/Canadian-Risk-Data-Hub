@@ -15,7 +15,7 @@ source .venv/bin/activate        # Windows: .venv\Scripts\activate
 Every table the hub tracks is listed in `sources/statcan_tables.csv`, one row per table:
 
 ```
-table_number,subject,category,geography,update_frequency,refresh_schedule,revision_policy,priority,known_limitations
+table_number,subject,category,geography,description,update_frequency,refresh_schedule,revision_policy,priority,known_limitations
 11-10-0222-01,household_spending,household,,"biennial (...)","after each ... release, 08:30 ET",,,"The survey became biennial after 2017, ..."
 14-10-0287-01,labour_force_characteristics,labour,,"monthly (...)","on Labour Force Survey release days, after 08:30 ET",,,"The full table is about 1.2 GB raw. ..."
 ```
@@ -26,6 +26,7 @@ table_number,subject,category,geography,update_frequency,refresh_schedule,revisi
 | `subject` | Recommended | One or two words for the dataset ID, e.g. `cpi`. If empty, it is built from the table title (place names such as "Canada" or "provinces" are left out). Only used the first time: once a table has a metadata record, its ID is kept |
 | `category` | No | A grouping label, e.g. `inflation`. Lowercased; `uncategorized` if empty |
 | `geography` | No | Which place to keep in the processed file. Empty means Canada; `all` keeps every place; separate several with `;` (e.g. `Ontario;Quebec`). Matching ignores capitals, and a DGUID also works. A name that is not in the table stops the run with the list of valid names |
+| `description` | Recommended | One or two sentences on what the table measures and why the hub keeps it. If empty, the table title is used, and the team standard's `metadata_completeness` check warns that the description only repeats the name |
 | `update_frequency`, `refresh_schedule`, `revision_policy`, `priority`, `known_limitations` | No | Written by people, copied into the metadata record as they are (see the README, *Common metadata*). Quote a value that contains commas. A one-off `--table` run of a catalogued table still uses them |
 
 Leave optional columns empty, but keep the commas.
@@ -53,12 +54,18 @@ For each table, named with its dataset ID (e.g. `statcan_18100005_cpi_annual`):
 | Folder | File |
 |---|---|
 | `raw/statcan/<dataset_id>/` | `<dataset_id>_<YYYYMMDD>.csv`, the data exactly as received, plus `<dataset_id>_<YYYYMMDD>_cube_metadata.csv`, StatCan's description of the table. A second version on the same day is saved as `..._<YYYYMMDD>_2.csv` |
-| `processed/statcan/<dataset_id>/` | `<dataset_id>.csv` with columns `date, geography, series, value, unit, source, dataset_id, status` |
+| `processed/statcan/<dataset_id>/` | `<dataset_id>.csv` with columns `date, geography, series, value, unit, source, dataset_id, status, status_category, geo_code, series_id`. `series_id` is StatCan's vector number (e.g. `v2062815`), which stays the same when StatCan rewords a label; `geo_code` is the DGUID; `status_category` translates the status symbol into the team standard's category |
 | `metadata/` | `<dataset_id>.json`, the metadata record described in the README, including the validation results and the retrieval history |
 
 Raw and processed CSVs are not committed to Git (see `.gitignore`); rerun the script to recreate them. The metadata records are committed.
 
 ## Rerunning
+
+After a change to the processing code, rebuild the processed files and metadata from the raw files already stored, without downloading (this avoids the 1.2 GB Labour Force download). The stored file's checksum is verified first, and no retrieval is added to the history:
+
+```bash
+python scripts/acquisition/statcan/download_statcan_table.py --from-raw
+```
 
 It is safe to run the script again.
 

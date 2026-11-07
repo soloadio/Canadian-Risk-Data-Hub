@@ -2,6 +2,48 @@
 
 Changes to the hub's scripts, conventions and documentation, newest first.
 
+## v0.4: Week 5 (2026-11-07)
+
+The hub now follows the team's metadata and QA standard (W5-SOL-01), its analysis-ready tables are validated and the household-spending table is corrected (W5-SOL-02), processed files keep each publisher's stable series identifier (W5-SOL-03), and a demo package checks the whole hub offline (W5-SOL-04). Verified with 80 automated tests, the demo, live runs against the Bank of Canada and Statistics Canada on 2026-11-07, and a rebuild of the Labour Force table from its stored raw file.
+
+### What changed
+
+| Area | Week 3 | Risk | Week 5 change |
+|---|---|---|---|
+| Household-spending analysis-ready table | Built in notebook 02 by pivoting to a wide table and melting back: 3,938 rows, 652 empty (16.6%), no status column | The pivot and melt invented **561 empty rows** for years a category did not exist (e.g. cannabis before it was surveyed), and the **91 real gaps** lost their reason (71 F, 20 ..). Four categories whose Canada values are all withheld disappeared | Built directly from the published rows: **3,405 rows**, exactly what StatCan published; 108 empty values (3.2%), each with its status (87 F, 21 ..). The validator fails the old table on provenance (561 rows with no published observation) |
+| Analysis-ready validation | None; tables written by notebooks | Errors like the one above go unnoticed | `scripts/processing/build_analysis_ready.py` builds the four tables, selecting series by `series_id`. `scripts/validation/validate_analysis_ready.py` checks layout, key fields, key, duplicate rows, nulls explained, provenance (every row matches a published observation; derived monthly means recomputed), derivations documented and inputs current. Each table has a record in `metadata/analysis_ready/`. Notebooks no longer write data |
+| Series identity | Series identified by their label only | A reworded label would break joins and look like a removed and a new series | Processed files gain `series_id` (StatCan vector, Valet series name), `geo_code` (DGUID) and `status_category`. New `series_identity` check; revisions matched on `series_id` (relabelled series reported as such); `primary_key` is `date, geography, series_id` |
+| Team QA standard | Hub checks only; pass/warn/fail; Ayesha's standard not available in Week 3 | Two standards drifting apart | `scripts/validation/rai_checks.py` implements the standard's add-on checks (key fields, missing share, value range, percentage convention, status symbols, unit consistency, future dates, period change, metadata completeness and consistency) on every retrieval; Ayesha's 12 tests pass unchanged. INFO severity added. Crosswalk in `documentation/metadata_qa_crosswalk_week5.md` |
+| Metadata | StatCan descriptions repeated the title; free-text revision policies; Confirmed High from same-day repeats | Records not promotable under the standard | Catalogue descriptions; `revision_policy` codes (`none`, `scheduled`, `ad_hoc`, `unknown`); Confirmed High requires identical data on two different days |
+| Promotion and sign-off | Not defined in the hub | No record of who accepted which warning | `scripts/validation/check_promotion_readiness.py` applies the team's nine criteria; `documentation/promotion_log.csv` (proposed dispositions, awaiting a reviewer) and `documentation/qa_log.csv` (182 check results in the standard's QA log layout) |
+| Reprocessing | Changing the processed layout meant downloading every table again (1.2 GB for the Labour Force Survey) | Slow, and a re-download can bring new data mixed with the code change | `--from-raw` on both acquisition scripts rebuilds processed files and records from the stored raw files after verifying their checksum; no retrieval is logged |
+| Reproducibility for others | Checking the hub needed the full downloads | A mentor or teammate cannot verify the hub quickly | `demo/run_demo.py`: the whole hub on about 200 KB of real samples, offline, on two fixed days, compared byte for byte with `demo/expected/`. Runs in CI |
+| Line endings | pandas wrote CSV files with CRLF on Windows | The same table had a different checksum on Windows and Linux | Every CSV is written with LF; `.gitattributes` keeps checksummed files byte-exact |
+
+### New and changed files
+
+- New: `scripts/validation/rai_checks.py`, `validate_analysis_ready.py`, `check_promotion_readiness.py`; `scripts/processing/build_analysis_ready.py`; `tests/test_rai_checks.py` (Ayesha Malhi), `tests/test_analysis_ready.py`, `tests/test_demo.py`; `demo/` (run_demo.py, make_samples.py, README.md, sample/, sources/, expected/); `documentation/metadata_qa_crosswalk_week5.md`, `promotion_log.csv`, `qa_log.csv`; `metadata/analysis_ready/` (4 records); `.gitattributes`.
+- Changed: `scripts/common/hub_core.py` (standard checks in every retrieval, reprocessing, reproducibility rule, INFO), `scripts/validation/hub_checks.py` (layout, identity, revisions, status categories), both acquisition scripts (`series_id`, `geo_code`, `status_category`, `description`, `--from-raw`), `validate_dataset.py` (runs the add-on checks too), both catalogues, the three notebooks (table code removed), README, both acquisition guides, `documentation/integration_note_week3.md` (attribution correction), CI (runs the demo).
+
+### Results on 2026-11-07
+
+| Dataset | Validation | Warnings and proposed dispositions | Reproducibility |
+|---|---|---|---|
+| `boc_v39079_policy_rate_daily` | Passed | None | Potential High |
+| `boc_avgintwo_corra_daily` | Passed with warnings | `period_change` (3.86%): real policy-rate steps; Accept | Potential High |
+| `boc_bdcdnyld_bond_yields_daily` | Passed | None | Potential High |
+| `boc_fxusdcad_exchange_rate_daily` | Passed | None | Potential High |
+| `statcan_11100222_household_spending_annual` | Passed with warnings | `date_gaps` (biennial survey), `freshness` (2023 is the latest survey year), `period_change` (biennial spacing); Accept | Confirmed High (identical on 4 days) |
+| `statcan_14100287_labour_force_characteristics_monthly` | Passed with warnings | `missing_share` 27.8% (all `..`, before each series' first value), `period_change` 1.42% (30% in 2020-2021); Accept | Confirmed High (identical on 3 days) |
+
+The Bank of Canada data changed between 2026-10-24 and 2026-11-07 because new days were published; the revisions check found every earlier observation reproduced unchanged, but the rating needs two identical retrievals on different days. All four analysis-ready tables passed validation (provenance: 3,405, 1,284, 40,174 and 468 rows, including 351 recomputed monthly means). Promotion readiness: 6 datasets ready for sign-off, 4 tables held until their inputs are promoted, none promoted yet.
+
+### Not done yet
+
+- **Ayesha's Week 5 files were not available** (W5-AYE-01 to 04 are marked Completed in the tracker without links), nor her original `rai_checks.py` (in a Drive folder not shared with this account). The hub follows her v1.0 standard and passes her tests; `documentation/metadata_qa_crosswalk_week5.md` (section 7) lists what to compare when they are shared.
+- **No dataset is promoted:** the promotion log holds the preparer's proposed dispositions; a reviewer other than the preparer must confirm and sign.
+- `priority` for the two StatCan tables (team decision); threshold calibration per dataset; totals-versus-components check (QA-XF1); event-table layout; a second same-checksum Bank of Canada retrieval on another day.
+
 ## v0.3: Week 3 (2026-10-24)
 
 A second publisher, the Bank of Canada (W3-SOL-01), on a shared core split out of the StatCan script (W3-SOL-02), alignment with the team's source catalogue and metadata work (W3-SOL-03), and refresh-readiness checks with a larger offline test suite (W3-SOL-04). Verified with 44 automated tests (`python -m pytest tests`) and live runs against both publishers on 2026-10-24.

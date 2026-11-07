@@ -61,6 +61,8 @@ All new fields are written by the scripts, from the catalogue or computed. Nothi
 
 Observation counts in W3-MAU-01 match the hub's live run on 2026-10-24, allowing for the two business days in between: policy rate 4,552 vs 4,554, CORRA 7,292 vs 7,294, yields 6,451 vs 6,453 dates (25,809 values; a few dates have fewer than four tenors, as the spec notes for 2006-09-04), USD/CAD 2,445 vs 2,447.
 
+> **Correction (Week 5, 2026-11-07).** Ayesha's integration review (W3-AYE-05, finding 14) asks for the attribution in conflict 6 to be corrected. Ayesha's tasks are W1-AYE-01 to 03, W2-AYE-01/02 and W3-AYE-01 to 05; Aahan's inventory is W1-AAH. The reproducibility rule the hub applies is set out in Ayesha's standard (RAI_Metadata_QA_Standard_v1.0, convention "Reproducibility"), which also requires the matching retrievals to be on different days; the hub now cites that standard instead of W1-AAH-02. Who defined the 16 inventory fields quoted in W3-MAU-03 should be confirmed with Maurya, Ayesha and Aahan. See `documentation/metadata_qa_crosswalk_week5.md`.
+
 ## 4. Maurya's Bank of Canada specification vs. what was built
 
 | W3-MAU-01 guideline | In the hub |

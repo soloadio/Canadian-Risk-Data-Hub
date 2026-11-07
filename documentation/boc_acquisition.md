@@ -15,8 +15,8 @@ source .venv/bin/activate        # Windows: .venv\Scripts\activate
 Every Bank of Canada dataset the hub tracks is a row in `sources/boc_series.csv`:
 
 ```
-series_ids,id_part,subject,name,category,update_frequency,refresh_schedule,revision_policy,priority,known_limitations
-V39079,,policy_rate,,interest_rates,"business daily; ...","11:30 ET on business days (CRON_TZ=America/Toronto)",Not revised,high,"A change announced at 09:45 ET takes effect the next business day. ..."
+series_ids,id_part,subject,name,category,description,update_frequency,refresh_schedule,revision_policy,priority,known_limitations
+V39079,,policy_rate,,interest_rates,,"business daily; ...","11:30 ET on business days (CRON_TZ=America/Toronto)",none,high,"A change announced at 09:45 ET takes effect the next business day. ..."
 BD.CDN.2YR.DQ.YLD;BD.CDN.5YR.DQ.YLD;BD.CDN.10YR.DQ.YLD;BD.CDN.LONG.DQ.YLD,bdcdnyld,bond_yields,"Selected benchmark bond yields: ...",interest_rates,...
 ```
 
@@ -27,6 +27,7 @@ BD.CDN.2YR.DQ.YLD;BD.CDN.5YR.DQ.YLD;BD.CDN.10YR.DQ.YLD;BD.CDN.LONG.DQ.YLD,bdcdny
 | `subject` | Yes | One or two words for the dataset ID, e.g. `corra`. Only used the first time: once a dataset has a metadata record, its ID is kept |
 | `name` | No | A readable name. For one series the Bank's label is used; recommended when there are several |
 | `category` | No | A grouping label, e.g. `interest_rates`. Lowercased; `uncategorized` if empty |
+| `description` | No | Overrides the Bank's own description of the series (recommended for a row with several series) |
 | `update_frequency`, `refresh_schedule`, `revision_policy`, `priority`, `known_limitations` | No | Written by people, copied into the metadata record as they are (see the README, *Common metadata*). Quote a value that contains commas |
 
 The four datasets in the catalogue, and the values in their descriptive columns, follow Maurya Shah's Bank of Canada integration specification (W3-MAU-01).
@@ -52,7 +53,7 @@ The whole catalogue takes a few seconds; the four raw files total about 4 MB.
 | Folder | File |
 |---|---|
 | `raw/boc/<dataset_id>/` | `<dataset_id>_<YYYYMMDD>.json`, the Valet response exactly as received (full history of every series, with the Bank's labels, units and terms link). A second version on the same day is saved as `..._<YYYYMMDD>_2.json` |
-| `processed/boc/<dataset_id>/` | `<dataset_id>.csv` with columns `date, geography, series, value, unit, source, dataset_id, status`. `series` is the Bank's label, e.g. `Benchmark bond yield, 10-year` |
+| `processed/boc/<dataset_id>/` | `<dataset_id>.csv` with columns `date, geography, series, value, unit, source, dataset_id, status, status_category, geo_code, series_id`. `series_id` is the Valet series name (e.g. `BD.CDN.10YR.DQ.YLD`), which stays the same if the Bank rewords a label; `geo_code` is empty because the Bank publishes no geography code. `series` is the Bank's label, e.g. `Benchmark bond yield, 10-year` |
 | `metadata/` | `<dataset_id>.json`, the metadata record described in the README |
 
 Raw JSON and processed CSV files are not committed to Git (see `.gitignore`); rerun the script to recreate them. The metadata records are committed.
@@ -65,6 +66,12 @@ Raw JSON and processed CSV files are not committed to Git (see `.gitignore`); re
 - **One key per observation.** `date`, `geography` and `series` identify an observation; two rows with the same key and different values fail the `duplicates` check.
 
 ## Rerunning and scheduling
+
+After a change to the processing code, `--from-raw` rebuilds the processed files and metadata from the stored raw responses without downloading (the stored file's checksum is verified first, and no retrieval is logged):
+
+```bash
+python scripts/acquisition/boc/download_boc_series.py --from-raw
+```
 
 It is safe to run the script again. As for Statistics Canada, the dataset ID never changes once assigned, raw files are never overwritten, an unchanged response is not copied again, and every run is logged in `retrieval_history`.
 
