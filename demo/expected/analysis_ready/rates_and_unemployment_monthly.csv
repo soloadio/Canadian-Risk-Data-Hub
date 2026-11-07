@@ -1,0 +1,37 @@
+date,geography,geo_code,series,series_id,derivation,value,unit,status,status_category,source,dataset_id
+2026-01-01,Canada,,"Benchmark bond yield, 10-year, monthly average (derived)",BD.CDN.10YR.DQ.YLD,monthly_mean,3.402381,Percent,,,boc,boc_bdcdnyld_bond_yields_daily
+2026-02-01,Canada,,"Benchmark bond yield, 10-year, monthly average (derived)",BD.CDN.10YR.DQ.YLD,monthly_mean,3.288421,Percent,,,boc,boc_bdcdnyld_bond_yields_daily
+2026-03-01,Canada,,"Benchmark bond yield, 10-year, monthly average (derived)",BD.CDN.10YR.DQ.YLD,monthly_mean,3.440909,Percent,,,boc,boc_bdcdnyld_bond_yields_daily
+2026-04-01,Canada,,"Benchmark bond yield, 10-year, monthly average (derived)",BD.CDN.10YR.DQ.YLD,monthly_mean,3.483333,Percent,,,boc,boc_bdcdnyld_bond_yields_daily
+2026-05-01,Canada,,"Benchmark bond yield, 10-year, monthly average (derived)",BD.CDN.10YR.DQ.YLD,monthly_mean,3.5415,Percent,,,boc,boc_bdcdnyld_bond_yields_daily
+2026-06-01,Canada,,"Benchmark bond yield, 10-year, monthly average (derived)",BD.CDN.10YR.DQ.YLD,monthly_mean,3.42,Percent,,,boc,boc_bdcdnyld_bond_yields_daily
+2026-07-01,Canada,,"Benchmark bond yield, 10-year, monthly average (derived)",BD.CDN.10YR.DQ.YLD,monthly_mean,3.547273,Percent,,,boc,boc_bdcdnyld_bond_yields_daily
+2026-08-01,Canada,,"Benchmark bond yield, 10-year, monthly average (derived)",BD.CDN.10YR.DQ.YLD,monthly_mean,3.675,Percent,,,boc,boc_bdcdnyld_bond_yields_daily
+2026-09-01,Canada,,"Benchmark bond yield, 10-year, monthly average (derived)",BD.CDN.10YR.DQ.YLD,monthly_mean,3.8825,Percent,,,boc,boc_bdcdnyld_bond_yields_daily
+2026-01-01,Canada,,"USD/CAD, monthly average (derived)",FXUSDCAD,monthly_mean,1.377819,Canadian dollars per US dollar,,,boc,boc_fxusdcad_exchange_rate_daily
+2026-02-01,Canada,,"USD/CAD, monthly average (derived)",FXUSDCAD,monthly_mean,1.365074,Canadian dollars per US dollar,,,boc,boc_fxusdcad_exchange_rate_daily
+2026-03-01,Canada,,"USD/CAD, monthly average (derived)",FXUSDCAD,monthly_mean,1.371709,Canadian dollars per US dollar,,,boc,boc_fxusdcad_exchange_rate_daily
+2026-04-01,Canada,,"USD/CAD, monthly average (derived)",FXUSDCAD,monthly_mean,1.375057,Canadian dollars per US dollar,,,boc,boc_fxusdcad_exchange_rate_daily
+2026-05-01,Canada,,"USD/CAD, monthly average (derived)",FXUSDCAD,monthly_mean,1.372305,Canadian dollars per US dollar,,,boc,boc_fxusdcad_exchange_rate_daily
+2026-06-01,Canada,,"USD/CAD, monthly average (derived)",FXUSDCAD,monthly_mean,1.404023,Canadian dollars per US dollar,,,boc,boc_fxusdcad_exchange_rate_daily
+2026-07-01,Canada,,"USD/CAD, monthly average (derived)",FXUSDCAD,monthly_mean,1.410714,Canadian dollars per US dollar,,,boc,boc_fxusdcad_exchange_rate_daily
+2026-08-01,Canada,,"USD/CAD, monthly average (derived)",FXUSDCAD,monthly_mean,1.38981,Canadian dollars per US dollar,,,boc,boc_fxusdcad_exchange_rate_daily
+2026-09-01,Canada,,"USD/CAD, monthly average (derived)",FXUSDCAD,monthly_mean,1.396195,Canadian dollars per US dollar,,,boc,boc_fxusdcad_exchange_rate_daily
+2026-01-01,Canada,,"Target for the overnight rate (business daily), monthly average (derived)",V39079,monthly_mean,2.25,Percent,,,boc,boc_v39079_policy_rate_daily
+2026-02-01,Canada,,"Target for the overnight rate (business daily), monthly average (derived)",V39079,monthly_mean,2.25,Percent,,,boc,boc_v39079_policy_rate_daily
+2026-03-01,Canada,,"Target for the overnight rate (business daily), monthly average (derived)",V39079,monthly_mean,2.25,Percent,,,boc,boc_v39079_policy_rate_daily
+2026-04-01,Canada,,"Target for the overnight rate (business daily), monthly average (derived)",V39079,monthly_mean,2.25,Percent,,,boc,boc_v39079_policy_rate_daily
+2026-05-01,Canada,,"Target for the overnight rate (business daily), monthly average (derived)",V39079,monthly_mean,2.25,Percent,,,boc,boc_v39079_policy_rate_daily
+2026-06-01,Canada,,"Target for the overnight rate (business daily), monthly average (derived)",V39079,monthly_mean,2.25,Percent,,,boc,boc_v39079_policy_rate_daily
+2026-07-01,Canada,,"Target for the overnight rate (business daily), monthly average (derived)",V39079,monthly_mean,2.25,Percent,,,boc,boc_v39079_policy_rate_daily
+2026-08-01,Canada,,"Target for the overnight rate (business daily), monthly average (derived)",V39079,monthly_mean,2.25,Percent,,,boc,boc_v39079_policy_rate_daily
+2026-09-01,Canada,,"Target for the overnight rate (business daily), monthly average (derived)",V39079,monthly_mean,2.25,Percent,,,boc,boc_v39079_policy_rate_daily
+2026-01-01,Canada,2021A000011124,Unemployment rate | Total - Gender | 15 years and over | Estimate | Seasonally adjusted,v2062815,,6.5,Percent,,,statcan,statcan_14100287_labour_force_characteristics_monthly
+2026-02-01,Canada,2021A000011124,Unemployment rate | Total - Gender | 15 years and over | Estimate | Seasonally adjusted,v2062815,,6.7,Percent,,,statcan,statcan_14100287_labour_force_characteristics_monthly
+2026-03-01,Canada,2021A000011124,Unemployment rate | Total - Gender | 15 years and over | Estimate | Seasonally adjusted,v2062815,,6.7,Percent,,,statcan,statcan_14100287_labour_force_characteristics_monthly
+2026-04-01,Canada,2021A000011124,Unemployment rate | Total - Gender | 15 years and over | Estimate | Seasonally adjusted,v2062815,,6.9,Percent,,,statcan,statcan_14100287_labour_force_characteristics_monthly
+2026-05-01,Canada,2021A000011124,Unemployment rate | Total - Gender | 15 years and over | Estimate | Seasonally adjusted,v2062815,,6.6,Percent,,,statcan,statcan_14100287_labour_force_characteristics_monthly
+2026-06-01,Canada,2021A000011124,Unemployment rate | Total - Gender | 15 years and over | Estimate | Seasonally adjusted,v2062815,,6.5,Percent,,,statcan,statcan_14100287_labour_force_characteristics_monthly
+2026-07-01,Canada,2021A000011124,Unemployment rate | Total - Gender | 15 years and over | Estimate | Seasonally adjusted,v2062815,,6.4,Percent,,,statcan,statcan_14100287_labour_force_characteristics_monthly
+2026-08-01,Canada,2021A000011124,Unemployment rate | Total - Gender | 15 years and over | Estimate | Seasonally adjusted,v2062815,,6.4,Percent,,,statcan,statcan_14100287_labour_force_characteristics_monthly
+2026-09-01,Canada,2021A000011124,Unemployment rate | Total - Gender | 15 years and over | Estimate | Seasonally adjusted,v2062815,,6.5,Percent,,,statcan,statcan_14100287_labour_force_characteristics_monthly

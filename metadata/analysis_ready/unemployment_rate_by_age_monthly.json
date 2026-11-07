@@ -3,7 +3,7 @@
   "file": "analysis_ready/unemployment_rate_by_age_monthly.csv",
   "description": "Monthly unemployment rate in Canada for all ages and three age groups, from the Labour Force Survey, seasonally adjusted, both genders, from January 2000.",
   "built_by": "scripts/processing/build_analysis_ready.py",
-  "built_at": "2026-11-07T15:53:57-05:00",
+  "built_at": "2026-11-07T15:58:25-05:00",
   "inputs": [
     {
       "dataset_id": "statcan_14100287_labour_force_characteristics_monthly",
@@ -36,10 +36,10 @@
   "observation_start": "2000-01-01",
   "observation_end": "2026-09-01",
   "known_limitations": "Seasonally adjusted: StatCan revises these estimates each January for the previous three years. Rates are in percent (points).",
-  "content_checksum": "sha256:15bde497bd392452ffdaa9afaddd0c151f82d42ea40da04e3502a8490db63abb",
+  "content_checksum": "sha256:3155ca8c4d1d492cb6d35f768ee45c9562321f6cb0c829c025cff7eb228ebf6f",
   "validation": {
     "status": "passed",
-    "run_at": "2026-11-07T15:53:57-05:00",
+    "run_at": "2026-11-07T15:58:25-05:00",
     "validator": "scripts/validation/validate_analysis_ready.py",
     "standard": "RAI_Metadata_QA_Standard_v1.0",
     "checks": [

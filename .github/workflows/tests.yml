@@ -18,3 +18,5 @@ jobs:
           cache: pip
       - run: pip install -r requirements.txt
       - run: python -m pytest tests -q
+      # The mentor/demo package: the whole hub on small samples, compared with demo/expected/.
+      - run: python demo/run_demo.py

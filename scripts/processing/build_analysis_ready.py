@@ -241,7 +241,9 @@ def build_table(table: Table, root: Path, now: datetime) -> dict:
     if status == "failed":
         raise ValueError("validation failed, previous table left in place:\n    " + "\n    ".join(checks.failures(results)))
 
-    csv_bytes = frame.to_csv(index=False, na_rep="").encode("utf-8")
+    # "\n" line endings on every platform (pandas would use "\r\n" on Windows), so the content checksum is the
+    # same on Windows and Linux.
+    csv_bytes = frame.to_csv(index=False, na_rep="", lineterminator="\n").encode("utf-8")
     table_path = root / record["file"]
     atomic_write(table_path, csv_bytes)
     record["content_checksum"] = ar.file_checksum(table_path)

@@ -370,7 +370,8 @@ def finish_dataset(ds: Dataset, *, processed, frequency: str, results: list[dict
         "checks": results,
     }
 
-    atomic_write_bytes(ds.processed_path, processed.to_csv(index=False, na_rep="").encode("utf-8"))
+    # "\n" line endings on every platform (pandas would use "\r\n" on Windows), so files are identical everywhere.
+    atomic_write_bytes(ds.processed_path, processed.to_csv(index=False, na_rep="", lineterminator="\n").encode("utf-8"))
     atomic_write_bytes(ds.metadata_path, (json.dumps(metadata, indent=2, ensure_ascii=False) + "\n").encode("utf-8"))
 
     return {

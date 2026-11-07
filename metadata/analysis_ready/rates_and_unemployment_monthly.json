@@ -3,7 +3,7 @@
   "file": "analysis_ready/rates_and_unemployment_monthly.csv",
   "description": "Monthly averages of the Bank of Canada policy rate, the 10-year benchmark bond yield and USD/CAD, with the Statistics Canada unemployment rate (15 years and over, seasonally adjusted), for the months all four cover. The first table combining two publishers.",
   "built_by": "scripts/processing/build_analysis_ready.py",
-  "built_at": "2026-11-07T15:53:57-05:00",
+  "built_at": "2026-11-07T15:58:25-05:00",
   "inputs": [
     {
       "dataset_id": "boc_v39079_policy_rate_daily",
@@ -57,10 +57,10 @@
   "observation_start": "2017-01-01",
   "observation_end": "2026-09-01",
   "known_limitations": "The monthly averages are derived by the hub, not published by the Bank; they average the business days the Bank published in each month. Units differ by series (percent, Canadian dollars per US dollar): compare movements, not levels.",
-  "content_checksum": "sha256:c97b54d64f2199176395c0dc3c5329fc41cedf831aad67f724afd036787b35aa",
+  "content_checksum": "sha256:1dbeafa30cc0355e614035a5fc3a65c5ab9ffee1a99957959dcec3f5cf5e1f5d",
   "validation": {
     "status": "passed",
-    "run_at": "2026-11-07T15:53:57-05:00",
+    "run_at": "2026-11-07T15:58:25-05:00",
     "validator": "scripts/validation/validate_analysis_ready.py",
     "standard": "RAI_Metadata_QA_Standard_v1.0",
     "checks": [

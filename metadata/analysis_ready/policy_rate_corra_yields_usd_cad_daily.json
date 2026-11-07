@@ -3,7 +3,7 @@
   "file": "analysis_ready/policy_rate_corra_yields_usd_cad_daily.csv",
   "description": "Business-daily Bank of Canada policy rate, CORRA, benchmark Government of Canada bond yields (2, 5, 10-year and long-term) and the USD/CAD exchange rate, as published.",
   "built_by": "scripts/processing/build_analysis_ready.py",
-  "built_at": "2026-11-07T15:53:57-05:00",
+  "built_at": "2026-11-07T15:58:25-05:00",
   "inputs": [
     {
       "dataset_id": "boc_v39079_policy_rate_daily",
@@ -53,10 +53,10 @@
   "observation_start": "1997-08-12",
   "observation_end": "2026-11-06",
   "known_limitations": "Market series have no row on market holidays; the policy rate is published every business day. Benchmark yields can jump when the Bank moves a benchmark to a new bond. USD/CAD is an indicative rate for statistical and analytical use.",
-  "content_checksum": "sha256:3b1e62bde87e69d7038aff2069010048b8de9ac49852a98e7574fc7d0b82cb43",
+  "content_checksum": "sha256:139aea9a3d19f8227e8da46c61c25ddfca3cf1514773d519875ed3e132fb8c51",
   "validation": {
     "status": "passed",
-    "run_at": "2026-11-07T15:53:57-05:00",
+    "run_at": "2026-11-07T15:58:25-05:00",
     "validator": "scripts/validation/validate_analysis_ready.py",
     "standard": "RAI_Metadata_QA_Standard_v1.0",
     "checks": [

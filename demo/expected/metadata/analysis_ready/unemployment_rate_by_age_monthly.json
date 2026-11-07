@@ -1,0 +1,113 @@
+{
+  "table_id": "unemployment_rate_by_age_monthly",
+  "file": "analysis_ready/unemployment_rate_by_age_monthly.csv",
+  "description": "Monthly unemployment rate in Canada for all ages and three age groups, from the Labour Force Survey, seasonally adjusted, both genders, from January 2000.",
+  "built_by": "scripts/processing/build_analysis_ready.py",
+  "built_at": "2026-11-08T12:00:00-05:00",
+  "inputs": [
+    {
+      "dataset_id": "statcan_14100287_labour_force_characteristics_monthly",
+      "raw_checksum": "sha256:50515a275b91ee447db742073f50e93c2d03e1aa79acd159dd73344d87f8e1c0",
+      "last_retrieved": "2026-11-08T12:00:00-05:00",
+      "validation_status": "passed"
+    }
+  ],
+  "selection": "Vectors v2062815 (all_ages), v2062842 (youth_15_24), v2062950 (core_age_25_54), v2062977 (older_55_plus) (unemployment rate, Total - Gender, Estimate, Seasonally adjusted); dates from 2000-01-01.",
+  "derivations": {},
+  "key": [
+    "date",
+    "series_id"
+  ],
+  "columns": [
+    "date",
+    "geography",
+    "geo_code",
+    "age_group",
+    "series",
+    "series_id",
+    "value",
+    "unit",
+    "status",
+    "status_category",
+    "source",
+    "dataset_id"
+  ],
+  "rows": 132,
+  "observation_start": "2024-01-01",
+  "observation_end": "2026-09-01",
+  "known_limitations": "Seasonally adjusted: StatCan revises these estimates each January for the previous three years. Rates are in percent (points).",
+  "content_checksum": "sha256:e6f071cd187593f3817bfa4ce589eb57c812ed3feedda0ff1e7740cf0d4bba48",
+  "validation": {
+    "status": "passed",
+    "run_at": "2026-11-08T12:00:00-05:00",
+    "validator": "scripts/validation/validate_analysis_ready.py",
+    "standard": "RAI_Metadata_QA_Standard_v1.0",
+    "checks": [
+      {
+        "check": "table_layout",
+        "status": "pass",
+        "detail": "132 rows with the required columns"
+      },
+      {
+        "check": "key_fields",
+        "status": "pass",
+        "detail": "no empty values in ['date', 'geography', 'series_id', 'dataset_id']"
+      },
+      {
+        "check": "table_key",
+        "status": "pass",
+        "detail": "['date', 'series_id'] identifies every row",
+        "key": [
+          "date",
+          "series_id"
+        ],
+        "repeated_rows": 0
+      },
+      {
+        "check": "duplicate_rows",
+        "status": "pass",
+        "detail": "no repeated rows",
+        "duplicate_rows": 0
+      },
+      {
+        "check": "nulls_explained",
+        "status": "pass",
+        "detail": "no empty values",
+        "missing": 0,
+        "unexplained": 0,
+        "missing_by_status": {}
+      },
+      {
+        "check": "provenance",
+        "status": "pass",
+        "detail": "all 132 source rows match a published observation (value and status)",
+        "source_rows": 132,
+        "derived_rows": 0,
+        "rows_without_source": 0,
+        "values_differing": 0,
+        "statuses_differing": 0,
+        "derived_values_recomputed": 0
+      },
+      {
+        "check": "derivations_documented",
+        "status": "pass",
+        "detail": "no derived rows"
+      },
+      {
+        "check": "inputs_current",
+        "status": "pass",
+        "detail": "built from the current data of all 1 inputs, which passed validation"
+      },
+      {
+        "check": "unit_consistency",
+        "status": "pass",
+        "detail": "one unit per series (4 series)"
+      },
+      {
+        "check": "future_dates",
+        "status": "pass",
+        "detail": "no observation dated after 2026-11-08"
+      }
+    ]
+  }
+}

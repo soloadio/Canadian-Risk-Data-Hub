@@ -20,3 +20,5 @@ processed/**/*.csv
 # Temporary files left by an interrupted download
 *.partial
 .pytest_cache/
+# The demo hub built by demo/run_demo.py (recreated on every run)
+demo/output/

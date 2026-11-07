@@ -3,7 +3,7 @@
   "file": "analysis_ready/household_spending_by_category_annual.csv",
   "description": "Average annual spending per household in Canada by spending category, as published in the Survey of Household Spending, one row per category and survey year.",
   "built_by": "scripts/processing/build_analysis_ready.py",
-  "built_at": "2026-11-07T15:53:57-05:00",
+  "built_at": "2026-11-07T15:58:25-05:00",
   "inputs": [
     {
       "dataset_id": "statcan_11100222_household_spending_annual",
@@ -36,10 +36,10 @@
   "observation_start": "2010-01-01",
   "observation_end": "2023-01-01",
   "known_limitations": "Survey years only (biennial since 2017: no 2018, 2020 or 2022). Categories changed between 2017 and 2019, so some cover only part of the period; years a category was not published have no row. Categories are hierarchical (totals and components): do not sum them. Current dollars. Empty values keep StatCan's reason in status (F = too unreliable to publish, .. = not available).",
-  "content_checksum": "sha256:b42b5b3451ff994774bfd91c51b13f0989e94dae7906f6a7691b6310e422e04b",
+  "content_checksum": "sha256:7291cf6d7145d7de498111a2407a1e6c68c32bf00ce1d3885a099a91b5a2e083",
   "validation": {
     "status": "passed",
-    "run_at": "2026-11-07T15:53:57-05:00",
+    "run_at": "2026-11-07T15:58:25-05:00",
     "validator": "scripts/validation/validate_analysis_ready.py",
     "standard": "RAI_Metadata_QA_Standard_v1.0",
     "checks": [

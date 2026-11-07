@@ -1,0 +1,135 @@
+{
+  "table_id": "rates_and_unemployment_monthly",
+  "file": "analysis_ready/rates_and_unemployment_monthly.csv",
+  "description": "Monthly averages of the Bank of Canada policy rate, the 10-year benchmark bond yield and USD/CAD, with the Statistics Canada unemployment rate (15 years and over, seasonally adjusted), for the months all four cover. The first table combining two publishers.",
+  "built_by": "scripts/processing/build_analysis_ready.py",
+  "built_at": "2026-11-08T12:00:00-05:00",
+  "inputs": [
+    {
+      "dataset_id": "boc_v39079_policy_rate_daily",
+      "raw_checksum": "sha256:0b4de115c225c3c7529d8abc638d4d32b7e19643b9d293e261270d869108aef0",
+      "last_retrieved": "2026-11-08T12:00:00-05:00",
+      "validation_status": "passed"
+    },
+    {
+      "dataset_id": "boc_bdcdnyld_bond_yields_daily",
+      "raw_checksum": "sha256:251b05c56aebb19a92af2e70a19d216602fc2beb5a88707c47478707581ac56b",
+      "last_retrieved": "2026-11-08T12:00:00-05:00",
+      "validation_status": "passed"
+    },
+    {
+      "dataset_id": "boc_fxusdcad_exchange_rate_daily",
+      "raw_checksum": "sha256:89aadd5c1cc03c407ea6fb1b3998037e0bff6781cbd1d9a8f4bc8ea10fe083d7",
+      "last_retrieved": "2026-11-08T12:00:00-05:00",
+      "validation_status": "passed"
+    },
+    {
+      "dataset_id": "statcan_14100287_labour_force_characteristics_monthly",
+      "raw_checksum": "sha256:50515a275b91ee447db742073f50e93c2d03e1aa79acd159dd73344d87f8e1c0",
+      "last_retrieved": "2026-11-08T12:00:00-05:00",
+      "validation_status": "passed"
+    }
+  ],
+  "selection": "Policy rate (V39079), 10-year yield (BD.CDN.10YR.DQ.YLD) and USD/CAD (FXUSDCAD) averaged by month; unemployment rate vector v2062815 as published; months covered by all four.",
+  "derivations": {
+    "monthly_mean": "mean of every published value in the calendar month, dated the first day of the month. Applied to the Bank of Canada series; the unemployment rate is already monthly and is copied."
+  },
+  "key": [
+    "date",
+    "series_id",
+    "derivation"
+  ],
+  "columns": [
+    "date",
+    "geography",
+    "geo_code",
+    "series",
+    "series_id",
+    "derivation",
+    "value",
+    "unit",
+    "status",
+    "status_category",
+    "source",
+    "dataset_id"
+  ],
+  "rows": 36,
+  "observation_start": "2026-01-01",
+  "observation_end": "2026-09-01",
+  "known_limitations": "The monthly averages are derived by the hub, not published by the Bank; they average the business days the Bank published in each month. Units differ by series (percent, Canadian dollars per US dollar): compare movements, not levels.",
+  "content_checksum": "sha256:1782fb0026fd67c1ca0c544701827b3e63990576da984c656d5838dbd868e542",
+  "validation": {
+    "status": "passed",
+    "run_at": "2026-11-08T12:00:00-05:00",
+    "validator": "scripts/validation/validate_analysis_ready.py",
+    "standard": "RAI_Metadata_QA_Standard_v1.0",
+    "checks": [
+      {
+        "check": "table_layout",
+        "status": "pass",
+        "detail": "36 rows with the required columns"
+      },
+      {
+        "check": "key_fields",
+        "status": "pass",
+        "detail": "no empty values in ['date', 'geography', 'series_id', 'dataset_id']"
+      },
+      {
+        "check": "table_key",
+        "status": "pass",
+        "detail": "['date', 'series_id', 'derivation'] identifies every row",
+        "key": [
+          "date",
+          "series_id",
+          "derivation"
+        ],
+        "repeated_rows": 0
+      },
+      {
+        "check": "duplicate_rows",
+        "status": "pass",
+        "detail": "no repeated rows",
+        "duplicate_rows": 0
+      },
+      {
+        "check": "nulls_explained",
+        "status": "pass",
+        "detail": "no empty values",
+        "missing": 0,
+        "unexplained": 0,
+        "missing_by_status": {}
+      },
+      {
+        "check": "provenance",
+        "status": "pass",
+        "detail": "all 9 source rows match a published observation (value and status); all 27 derived values match their rule recomputed from the source",
+        "source_rows": 9,
+        "derived_rows": 27,
+        "rows_without_source": 0,
+        "values_differing": 0,
+        "statuses_differing": 0,
+        "derived_values_recomputed": 27
+      },
+      {
+        "check": "derivations_documented",
+        "status": "pass",
+        "detail": "derived rows use documented rules ['monthly_mean'] and are labelled as derived"
+      },
+      {
+        "check": "inputs_current",
+        "status": "pass",
+        "detail": "built from the current data of all 4 inputs, which passed validation"
+      },
+      {
+        "check": "unit_consistency",
+        "status": "pass",
+        "detail": "one unit per series (4 series)"
+      },
+      {
+        "check": "future_dates",
+        "status": "pass",
+        "detail": "no observation dated after 2026-11-08"
+      }
+    ]
+  }
+}

@@ -70,7 +70,7 @@
   "priority": null,
   "validation": {
     "status": "passed_with_warnings",
-    "run_at": "2026-11-07T15:52:08-05:00",
+    "run_at": "2026-11-07T15:57:11-05:00",
     "validator": "scripts/validation/validate_statcan_dataset.py",
     "standard": "RAI_Metadata_QA_Standard_v1.0",
     "mode": "reprocessed from the stored raw file (no download)",

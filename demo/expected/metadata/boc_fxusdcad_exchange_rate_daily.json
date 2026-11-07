@@ -1,0 +1,233 @@
+{
+  "dataset_id": "boc_fxusdcad_exchange_rate_daily",
+  "dataset_name": "USD/CAD",
+  "description": "Daily average exchange rate of the US dollar in Canadian dollars.",
+  "source_organization": "Bank of Canada",
+  "source_url": "https://www.bankofcanada.ca/valet/observations/FXUSDCAD/json",
+  "source_table_or_series_id": "FXUSDCAD",
+  "licence": {
+    "name": "Bank of Canada Terms of Use",
+    "url": "https://www.bankofcanada.ca/terms/",
+    "conditions": "Free to use, copy and distribute. Attribute the Bank of Canada as the source and indicate any changes. Bank of Canada exchange rates are for statistical and analytical purposes only, not for executing trades."
+  },
+  "access": "Public. Free, no account or API key required. The Bank's terms prohibit circumventing its request limits.",
+  "access_format": "JSON from a REST API (Valet)",
+  "retrieval_method": "Bank of Canada Valet REST API: observations/{series}/json returns the full history of the requested series together with each series' label, description, unit and frequency. The response is stored unchanged as the raw file.",
+  "retrieval_script": "download_boc_series.py",
+  "subject_category": "exchange_rates",
+  "geography": "Canada (national series); processed file: Canada",
+  "frequency": "daily",
+  "frequency_basis": "declared by Bank of Canada (Business daily)",
+  "observation_start": "2026-01-02",
+  "observation_end": "2026-11-06",
+  "units": "Canadian dollars per US dollar",
+  "last_retrieved": "2026-11-08T12:00:00-05:00",
+  "raw_file_location": "raw/boc/boc_fxusdcad_exchange_rate_daily/boc_fxusdcad_exchange_rate_daily_20261107.json",
+  "processed_file_location": "processed/boc/boc_fxusdcad_exchange_rate_daily/boc_fxusdcad_exchange_rate_daily.csv",
+  "update_frequency": "business daily; published around 16:30 ET",
+  "refresh_schedule": "17:15 ET same day and 11:30 ET next morning on business days (CRON_TZ=America/Toronto)",
+  "revision_policy": "none",
+  "source_last_updated": null,
+  "checksum": "sha256:89aadd5c1cc03c407ea6fb1b3998037e0bff6781cbd1d9a8f4bc8ea10fe083d7",
+  "primary_key": [
+    "date",
+    "geography",
+    "series_id"
+  ],
+  "reproducibility_rating": {
+    "rating": "Confirmed High",
+    "basis": "2 retrievals on 2 different days produced the same raw data (sha256:89aadd5c1cc0...): 2026-11-07, 2026-11-08"
+  },
+  "schema_version": 1,
+  "schema": {
+    "columns": [
+      "d",
+      "FXUSDCAD"
+    ],
+    "dimension_columns": [],
+    "units": [
+      "Canadian dollars per US dollar"
+    ]
+  },
+  "quality_notes": "213 rows in raw file; 213 rows in processed file (Canada). Missing values: 0 of 213 observations have no value (0.0%): none. Validation passed. Notes (INFO, see validation): metadata_completeness.",
+  "known_limitations": "Not revised. Indicative daily average of quotes from 08:00 to 16:00 ET, not a transaction or fixing rate; the Bank says it is for statistical and analytical purposes only. Valet history starts 2017-01-03. Not published on market holidays",
+  "priority": "high",
+  "validation": {
+    "status": "passed",
+    "run_at": "2026-11-08T12:00:00-05:00",
+    "validator": "scripts/validation/hub_checks.py",
+    "standard": "RAI_Metadata_QA_Standard_v1.0",
+    "mode": "retrieval",
+    "checks": [
+      {
+        "check": "schema",
+        "status": "pass",
+        "detail": "same columns and dimensions as the previous retrieval (version 1)"
+      },
+      {
+        "check": "terms",
+        "status": "pass",
+        "detail": "response carries the Bank's terms of use (https://www.bankofcanada.ca/terms/)"
+      },
+      {
+        "check": "series_present",
+        "status": "pass",
+        "detail": "all 1 series returned (FXUSDCAD: 213 values)",
+        "values_by_series": {
+          "FXUSDCAD": 213
+        }
+      },
+      {
+        "check": "units",
+        "status": "pass",
+        "detail": "all series in Canadian dollars per US dollar"
+      },
+      {
+        "check": "dates",
+        "status": "pass",
+        "detail": "every reference period converted to an ISO date"
+      },
+      {
+        "check": "numeric_values",
+        "status": "pass",
+        "detail": "every non-empty VALUE is a number"
+      },
+      {
+        "check": "empty_values",
+        "status": "pass",
+        "detail": "no observation carried an empty value"
+      },
+      {
+        "check": "processed_layout",
+        "status": "pass",
+        "detail": "213 rows with the standard columns"
+      },
+      {
+        "check": "duplicates",
+        "status": "pass",
+        "detail": "no duplicate observations",
+        "exact_duplicates_removed": 0,
+        "conflicting_rows": 0
+      },
+      {
+        "check": "series_identity",
+        "status": "pass",
+        "detail": "1 series, each with one stable series_id and one label",
+        "series": 1,
+        "rows_without_id": 0
+      },
+      {
+        "check": "missing_values",
+        "status": "pass",
+        "detail": "0 of 213 observations have no value (0.0%): none",
+        "missing": 0,
+        "missing_by_status": {},
+        "unexplained": 0,
+        "contradicting": 0
+      },
+      {
+        "check": "date_gaps",
+        "status": "pass",
+        "detail": "no series goes more than 7 days without an observation (2026-01-02 to 2026-11-06)",
+        "longest_gap_days": 4,
+        "series_with_gaps": 0
+      },
+      {
+        "check": "revisions",
+        "status": "pass",
+        "detail": "no earlier value changed or disappeared; 0 new observations",
+        "changed_values": 0,
+        "removed_observations": 0,
+        "new_observations": 0,
+        "relabelled_series": 0,
+        "matched_on": "series_id"
+      },
+      {
+        "check": "freshness",
+        "status": "pass",
+        "detail": "latest observation is 2026-11-06 (2 days old, limit 7)",
+        "age_days": 2,
+        "limit_days": 7
+      },
+      {
+        "check": "key_fields",
+        "status": "pass",
+        "detail": "no empty values in ['date', 'geography', 'series', 'dataset_id']"
+      },
+      {
+        "check": "missing_share",
+        "status": "pass",
+        "detail": "0 of 213 values empty (0.0%; limit 5%)",
+        "missing": 0,
+        "share": 0.0
+      },
+      {
+        "check": "value_range",
+        "status": "pass",
+        "detail": "no unit with a default range"
+      },
+      {
+        "check": "percent_convention",
+        "status": "pass",
+        "detail": "no percentage values (standard errors excluded)"
+      },
+      {
+        "check": "status_symbols",
+        "status": "pass",
+        "detail": "no status symbols"
+      },
+      {
+        "check": "unit_consistency",
+        "status": "pass",
+        "detail": "one unit per series (1 series)"
+      },
+      {
+        "check": "future_dates",
+        "status": "pass",
+        "detail": "no observation dated after 2026-11-08"
+      },
+      {
+        "check": "period_change",
+        "status": "pass",
+        "detail": "no change beyond 8 robust standard deviations in 212 period-over-period changes",
+        "flagged": 0,
+        "changes": 212
+      },
+      {
+        "check": "metadata_completeness",
+        "status": "info",
+        "detail": "all 32 Required keys filled; Recommended keys empty: ['source_last_updated']",
+        "missing": [],
+        "recommended_missing": [
+          "source_last_updated"
+        ]
+      },
+      {
+        "check": "metadata_consistency",
+        "status": "pass",
+        "detail": "dataset_id and observation dates agree with the metadata record"
+      }
+    ]
+  },
+  "retrieval_history": [
+    {
+      "retrieved": "2026-11-07T12:00:00-05:00",
+      "checksum": "sha256:89aadd5c1cc03c407ea6fb1b3998037e0bff6781cbd1d9a8f4bc8ea10fe083d7",
+      "raw_file": "raw/boc/boc_fxusdcad_exchange_rate_daily/boc_fxusdcad_exchange_rate_daily_20261107.json",
+      "source_last_updated": null,
+      "data_changed": null,
+      "schema_version": 1,
+      "validation_status": "passed"
+    },
+    {
+      "retrieved": "2026-11-08T12:00:00-05:00",
+      "checksum": "sha256:89aadd5c1cc03c407ea6fb1b3998037e0bff6781cbd1d9a8f4bc8ea10fe083d7",
+      "raw_file": "raw/boc/boc_fxusdcad_exchange_rate_daily/boc_fxusdcad_exchange_rate_daily_20261107.json",
+      "source_last_updated": null,
+      "data_changed": false,
+      "schema_version": 1,
+      "validation_status": "passed"
+    }
+  ],
+  "ai_use_note": "The acquisition, processing and validation code was written with the help of an AI coding assistant (Claude, Anthropic) and reviewed by the project team. No data values were generated, edited or imputed by AI: raw files are stored exactly as published by the Bank of Canada, and the processed file is produced by the deterministic code named in retrieval_script. The automated checks recorded under validation were run on this retrieval."
+}

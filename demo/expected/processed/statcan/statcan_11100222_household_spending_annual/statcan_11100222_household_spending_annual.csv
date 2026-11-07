@@ -1,0 +1,61 @@
+date,geography,series,value,unit,source,dataset_id,status,status_category,geo_code,series_id
+2010-01-01,Canada,Average expenditure per household | Total expenditure,72075.0,Dollars,statcan,statcan_11100222_household_spending_annual,,,2016A000011124,v54325508
+2010-01-01,Canada,Average expenditure per household | Food expenditures,7850.0,Dollars,statcan,statcan_11100222_household_spending_annual,,,2016A000011124,v54325510
+2010-01-01,Canada,Average expenditure per household | Shelter,15020.0,Dollars,statcan,statcan_11100222_household_spending_annual,,,2016A000011124,v54325513
+2010-01-01,Canada,Average expenditure per household | Transportation,11156.0,Dollars,statcan,statcan_11100222_household_spending_annual,,,2016A000011124,v54325530
+2010-01-01,Canada,"Average expenditure per household | Collectors' items (e.g. stamps, coins)",20.0,Dollars,statcan,statcan_11100222_household_spending_annual,,,2016A000011124,v64469291
+2011-01-01,Canada,Average expenditure per household | Total expenditure,73646.0,Dollars,statcan,statcan_11100222_household_spending_annual,,,2016A000011124,v54325508
+2011-01-01,Canada,Average expenditure per household | Food expenditures,7791.0,Dollars,statcan,statcan_11100222_household_spending_annual,,,2016A000011124,v54325510
+2011-01-01,Canada,Average expenditure per household | Shelter,15215.0,Dollars,statcan,statcan_11100222_household_spending_annual,,,2016A000011124,v54325513
+2011-01-01,Canada,Average expenditure per household | Transportation,11262.0,Dollars,statcan,statcan_11100222_household_spending_annual,,,2016A000011124,v54325530
+2011-01-01,Canada,"Average expenditure per household | Collectors' items (e.g. stamps, coins)",16.0,Dollars,statcan,statcan_11100222_household_spending_annual,,,2016A000011124,v64469291
+2012-01-01,Canada,Average expenditure per household | Total expenditure,75695.0,Dollars,statcan,statcan_11100222_household_spending_annual,,,2016A000011124,v54325508
+2012-01-01,Canada,Average expenditure per household | Food expenditures,7760.0,Dollars,statcan,statcan_11100222_household_spending_annual,,,2016A000011124,v54325510
+2012-01-01,Canada,Average expenditure per household | Shelter,15807.0,Dollars,statcan,statcan_11100222_household_spending_annual,,,2016A000011124,v54325513
+2012-01-01,Canada,Average expenditure per household | Transportation,11202.0,Dollars,statcan,statcan_11100222_household_spending_annual,,,2016A000011124,v54325530
+2012-01-01,Canada,"Average expenditure per household | Collectors' items (e.g. stamps, coins)",17.0,Dollars,statcan,statcan_11100222_household_spending_annual,,,2016A000011124,v64469291
+2013-01-01,Canada,Average expenditure per household | Total expenditure,79098.0,Dollars,statcan,statcan_11100222_household_spending_annual,,,2016A000011124,v54325508
+2013-01-01,Canada,Average expenditure per household | Food expenditures,7934.0,Dollars,statcan,statcan_11100222_household_spending_annual,,,2016A000011124,v54325510
+2013-01-01,Canada,Average expenditure per household | Shelter,16361.0,Dollars,statcan,statcan_11100222_household_spending_annual,,,2016A000011124,v54325513
+2013-01-01,Canada,Average expenditure per household | Transportation,12044.0,Dollars,statcan,statcan_11100222_household_spending_annual,,,2016A000011124,v54325530
+2013-01-01,Canada,"Average expenditure per household | Collectors' items (e.g. stamps, coins)",19.0,Dollars,statcan,statcan_11100222_household_spending_annual,,,2016A000011124,v64469291
+2014-01-01,Canada,Average expenditure per household | Total expenditure,80727.0,Dollars,statcan,statcan_11100222_household_spending_annual,,,2016A000011124,v54325508
+2014-01-01,Canada,Average expenditure per household | Food expenditures,8109.0,Dollars,statcan,statcan_11100222_household_spending_annual,,,2016A000011124,v54325510
+2014-01-01,Canada,Average expenditure per household | Shelter,17160.0,Dollars,statcan,statcan_11100222_household_spending_annual,,,2016A000011124,v54325513
+2014-01-01,Canada,Average expenditure per household | Transportation,11891.0,Dollars,statcan,statcan_11100222_household_spending_annual,,,2016A000011124,v54325530
+2014-01-01,Canada,"Average expenditure per household | Collectors' items (e.g. stamps, coins)",22.0,Dollars,statcan,statcan_11100222_household_spending_annual,,,2016A000011124,v64469291
+2015-01-01,Canada,Average expenditure per household | Total expenditure,82697.0,Dollars,statcan,statcan_11100222_household_spending_annual,,,2016A000011124,v54325508
+2015-01-01,Canada,Average expenditure per household | Food expenditures,8629.0,Dollars,statcan,statcan_11100222_household_spending_annual,,,2016A000011124,v54325510
+2015-01-01,Canada,Average expenditure per household | Shelter,17509.0,Dollars,statcan,statcan_11100222_household_spending_annual,,,2016A000011124,v54325513
+2015-01-01,Canada,Average expenditure per household | Transportation,11761.0,Dollars,statcan,statcan_11100222_household_spending_annual,,,2016A000011124,v54325530
+2015-01-01,Canada,"Average expenditure per household | Collectors' items (e.g. stamps, coins)",18.0,Dollars,statcan,statcan_11100222_household_spending_annual,,,2016A000011124,v64469291
+2016-01-01,Canada,Average expenditure per household | Total expenditure,84489.0,Dollars,statcan,statcan_11100222_household_spending_annual,,,2016A000011124,v54325508
+2016-01-01,Canada,Average expenditure per household | Food expenditures,8784.0,Dollars,statcan,statcan_11100222_household_spending_annual,,,2016A000011124,v54325510
+2016-01-01,Canada,Average expenditure per household | Shelter,18032.0,Dollars,statcan,statcan_11100222_household_spending_annual,,,2016A000011124,v54325513
+2016-01-01,Canada,Average expenditure per household | Transportation,11909.0,Dollars,statcan,statcan_11100222_household_spending_annual,,,2016A000011124,v54325530
+2016-01-01,Canada,"Average expenditure per household | Collectors' items (e.g. stamps, coins)",21.0,Dollars,statcan,statcan_11100222_household_spending_annual,,,2016A000011124,v64469291
+2017-01-01,Canada,Average expenditure per household | Total expenditure,86479.0,Dollars,statcan,statcan_11100222_household_spending_annual,,,2016A000011124,v54325508
+2017-01-01,Canada,Average expenditure per household | Food expenditures,8968.0,Dollars,statcan,statcan_11100222_household_spending_annual,,,2016A000011124,v54325510
+2017-01-01,Canada,Average expenditure per household | Shelter,18640.0,Dollars,statcan,statcan_11100222_household_spending_annual,,,2016A000011124,v54325513
+2017-01-01,Canada,Average expenditure per household | Transportation,12721.0,Dollars,statcan,statcan_11100222_household_spending_annual,,,2016A000011124,v54325530
+2017-01-01,Canada,"Average expenditure per household | Collectors' items (e.g. stamps, coins)",23.0,Dollars,statcan,statcan_11100222_household_spending_annual,,,2016A000011124,v64469291
+2019-01-01,Canada,Average expenditure per household | Total expenditure,93724.0,Dollars,statcan,statcan_11100222_household_spending_annual,,,2016A000011124,v54325508
+2019-01-01,Canada,Average expenditure per household | Food expenditures,10311.0,Dollars,statcan,statcan_11100222_household_spending_annual,,,2016A000011124,v54325510
+2019-01-01,Canada,Average expenditure per household | Shelter,20200.0,Dollars,statcan,statcan_11100222_household_spending_annual,,,2016A000011124,v54325513
+2019-01-01,Canada,Average expenditure per household | Transportation,12737.0,Dollars,statcan,statcan_11100222_household_spending_annual,,,2016A000011124,v54325530
+2019-01-01,Canada,"Average expenditure per household | Collectors' items (e.g. stamps, coins)",28.0,Dollars,statcan,statcan_11100222_household_spending_annual,,,2016A000011124,v64469291
+2019-01-01,Canada,Average expenditure per household | Cannabis for non-medical use,121.0,Dollars,statcan,statcan_11100222_household_spending_annual,,,2016A000011124,v1234863688
+2021-01-01,Canada,Average expenditure per household | Total expenditure,92500.0,Dollars,statcan,statcan_11100222_household_spending_annual,,,2016A000011124,v54325508
+2021-01-01,Canada,Average expenditure per household | Food expenditures,10305.0,Dollars,statcan,statcan_11100222_household_spending_annual,,,2016A000011124,v54325510
+2021-01-01,Canada,Average expenditure per household | Shelter,21106.0,Dollars,statcan,statcan_11100222_household_spending_annual,,,2016A000011124,v54325513
+2021-01-01,Canada,Average expenditure per household | Transportation,10099.0,Dollars,statcan,statcan_11100222_household_spending_annual,,,2016A000011124,v54325530
+2021-01-01,Canada,Average expenditure per household | Cannabis for non-medical use,162.0,Dollars,statcan,statcan_11100222_household_spending_annual,,,2016A000011124,v1234863688
+2021-01-01,Canada,Average expenditure per household | Convenience fees,2.0,Dollars,statcan,statcan_11100222_household_spending_annual,,,2016A000011124,v1564139583
+2023-01-01,Canada,Average expenditure per household | Total expenditure,105367.0,Dollars,statcan,statcan_11100222_household_spending_annual,,,2016A000011124,v54325508
+2023-01-01,Canada,Average expenditure per household | Food expenditures,11933.0,Dollars,statcan,statcan_11100222_household_spending_annual,,,2016A000011124,v54325510
+2023-01-01,Canada,Average expenditure per household | Shelter,24501.0,Dollars,statcan,statcan_11100222_household_spending_annual,,,2016A000011124,v54325513
+2023-01-01,Canada,Average expenditure per household | Transportation,12019.0,Dollars,statcan,statcan_11100222_household_spending_annual,,,2016A000011124,v54325530
+2023-01-01,Canada,Average expenditure per household | Charging expenses for electric vehicles,,Dollars,statcan,statcan_11100222_household_spending_annual,F,unreliable,2016A000011124,v1663833208
+2023-01-01,Canada,"Average expenditure per household | Collectors' items (e.g. stamps, coins)",,Dollars,statcan,statcan_11100222_household_spending_annual,F,unreliable,2016A000011124,v64469291
+2023-01-01,Canada,Average expenditure per household | Cannabis for non-medical use,175.0,Dollars,statcan,statcan_11100222_household_spending_annual,,,2016A000011124,v1234863688
+2023-01-01,Canada,Average expenditure per household | Convenience fees,1.0,Dollars,statcan,statcan_11100222_household_spending_annual,,,2016A000011124,v1564139583

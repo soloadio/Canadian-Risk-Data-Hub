@@ -1,0 +1,6 @@
+# Files the hub verifies by checksum or byte-for-byte comparison: keep their bytes exactly as written,
+# with no line-ending conversion on checkout (a Windows checkout would otherwise turn LF into CRLF and
+# change every checksum).
+analysis_ready/*.csv -text
+demo/sample/** -text
+demo/expected/** -text
