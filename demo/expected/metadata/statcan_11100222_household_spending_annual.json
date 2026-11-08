@@ -65,9 +65,9 @@
       "Dollars"
     ]
   },
-  "quality_notes": "60 rows in raw file; 60 rows in processed file (all geographies). Missing values: 2 of 60 observations have no value (3.3%): 2 F (too unreliable to be published). Validation passed with warnings. Warnings: date_gaps: 3 annual periods have no data in the whole table: ['2018', '2020', '2022']; 1 series skip periods inside their own date range (1 periods in total), e.g. [\"Canada / Average expenditure per household | Collectors' items (e.g. stamps, coins)\"] | freshness: latest observation is 2023-01-01, 1407 days old; annual data is normally no more than 913 days old. Check whether the source still updates | period_change: 4 of 51 changes (7.84%) are unusually large and listed for review (QA-OUT2), e.g. ['2023-01-01 Average expenditure per household | Total expenditure: +1.287e+04', '2019-01-01 Average expenditure per household | Total expenditure: +7245', '2023-01-01 Average expenditure per household | Shelter: +3395', '2021-01-01 Average expenditure per household | Transportation: -2638'] Notes (INFO, see validation): missing_share, status_symbols, metadata_completeness.",
+  "quality_notes": "60 rows in raw file; 60 rows in processed file (all geographies). Missing values: 2 of 60 observations have no value (3.3%): 2 F (too unreliable to be published). Validation passed with warnings. Warnings: date_gaps: 3 annual periods have no data in the whole table: ['2018', '2020', '2022']; 1 series skip periods inside their own date range (1 periods in total), e.g. [\"Canada / Average expenditure per household | Collectors' items (e.g. stamps, coins)\"] | freshness: latest observation is 2023-01-01, 1407 days old; annual data is normally no more than 913 days old. Check whether the source still updates | period_change: 4 of 51 changes (7.84%) are unusually large and listed for review (QA-OUT2), e.g. ['2023-01-01 Average expenditure per household | Total expenditure: +1.287e+04', '2019-01-01 Average expenditure per household | Total expenditure: +7245', '2023-01-01 Average expenditure per household | Shelter: +3395', '2021-01-01 Average expenditure per household | Transportation: -2638'] Notes (INFO, see validation): missing_share, status_symbols.",
   "known_limitations": "The survey became biennial after 2017, so 2018, 2020 and 2022 are absent from the table. Categories changed between 2017 and 2019 (some added, some discontinued), so not every category covers every year. Categories are hierarchical (totals and their components), so they must not be summed. Values are in current dollars (not adjusted for inflation).",
-  "priority": null,
+  "priority": "high",
   "validation": {
     "status": "passed_with_warnings",
     "run_at": "2026-11-08T12:00:00-05:00",
@@ -216,12 +216,10 @@
       },
       {
         "check": "metadata_completeness",
-        "status": "info",
-        "detail": "all 32 Required keys filled; Recommended keys empty: ['priority']",
+        "status": "pass",
+        "detail": "all 32 Required and 4 Recommended keys filled",
         "missing": [],
-        "recommended_missing": [
-          "priority"
-        ]
+        "recommended_missing": []
       },
       {
         "check": "metadata_consistency",

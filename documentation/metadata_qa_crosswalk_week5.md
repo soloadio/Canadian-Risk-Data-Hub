@@ -23,7 +23,7 @@ The standard was written against the hub's 36 record keys, and every record stil
 |---|---|---|---|
 | `description` | Required; must not simply repeat `dataset_name` | StatCan records repeated the table title | From the catalogue's new `description` column (one or two sentences on what is measured and why the hub keeps it). Checked by `metadata_completeness` |
 | `revision_policy` | Recommended; one of `none`, `scheduled`, `ad_hoc`, `unknown` | Free text (BoC); empty (StatCan) | Codes: policy rate and USD/CAD `none`, CORRA `ad_hoc`, yields `unknown`, Labour Force `scheduled`, household spending `unknown`. The explanations moved to `known_limitations`. Checked by `metadata_completeness` |
-| `priority` | Recommended | Empty for StatCan | Still empty for StatCan: a team decision (section 7). Reported as INFO, which does not block |
+| `priority` | Recommended | Empty for StatCan | `high` for both StatCan tables, by the rule already used for the Bank of Canada datasets: the tracker priority of the task that brought the dataset into the hub (W1-SOL-02, High). The team can change it in the catalogue. Checked by `metadata_completeness` |
 | `primary_key` | Required; columns that identify an observation | `date, geography, series` | `date, geography, series_id`, the stable key (section 3) |
 | `reproducibility_rating` | Required; Confirmed High needs identical data on two **different days** | Two identical retrievals, any day | The standard's rule. StatCan datasets: Confirmed High (household spending identical on 2026-10-10, 10-18, 10-24 and 11-07; Labour Force on 10-10, 10-18 and 10-24). BoC datasets: Potential High (section 6, finding 9) |
 | `known_limitations` | Required; "none known" if none | Filled for all six | Extended: StatCan classification change and hierarchy, Labour Force revision schedule, revision details for BoC |
@@ -109,7 +109,7 @@ It lists the manual items for the reviewer (4, 5, 7), and promotes a table only 
 | # | Finding | Resolution |
 |---|---|---|
 | 1 | StatCan descriptions only repeat the dataset name | **Fixed:** catalogue descriptions |
-| 2 | `revision_policy` and `priority` empty for StatCan | `revision_policy` **fixed** (`unknown`, `scheduled`); `priority` left for the team (section 7) |
+| 2 | `revision_policy` and `priority` empty for StatCan | **Fixed:** `revision_policy` (`unknown`, `scheduled`) and `priority` (`high`, the priority of W1-SOL-02) |
 | 3 | No owner, reviewer or sign-off; records are rewritten | **Fixed:** promotion log keyed to the raw checksum, and the readiness tool |
 | 4 | Merge `rai_checks.py` into `scripts/validation` | **Done**, from the standard and her tests (her module was not accessible); tests 44 to 80 |
 | 5 | No INFO in the hub | **Fixed** |
@@ -131,7 +131,6 @@ It lists the manual items for the reviewer (4, 5, 7), and promotes a table only 
   - her QA results and exception register with `documentation/qa_log.csv` and the promotion log;
   - her module with the hub's (her 12 tests already pass on the hub's version).
 - **Reviewer sign-off:** the promotion log has proposed dispositions; a reviewer other than the preparer confirms or changes them and signs.
-- **`priority`** for the two StatCan tables (team decision).
 - **Threshold calibration** per dataset (`period_change`, `missing_share`), including biennial spacing for household spending.
 - **QA-XF1** (totals equal components) needs each table's category hierarchy.
 - **Event-table layout** and a shared province lookup, with the provincial work.

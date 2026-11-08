@@ -71,9 +71,9 @@
       "Percent"
     ]
   },
-  "quality_notes": "132 rows in raw file; 132 rows in processed file (all geographies). Missing values: 0 of 132 observations have no value (0.0%): none. Validation passed. Notes (INFO, see validation): metadata_completeness.",
+  "quality_notes": "132 rows in raw file; 132 rows in processed file (all geographies). Missing values: 0 of 132 observations have no value (0.0%): none. Validation passed.",
   "known_limitations": "Seasonally adjusted estimates are revised each January for the previous three years, and the whole series is revised when population estimates are rebased. Seasonally adjusted and trend-cycle series are published together; choose series by series_id or label. The full table is about 1.2 GB raw.",
-  "priority": null,
+  "priority": "high",
   "validation": {
     "status": "passed",
     "run_at": "2026-11-08T12:00:00-05:00",
@@ -212,12 +212,10 @@
       },
       {
         "check": "metadata_completeness",
-        "status": "info",
-        "detail": "all 32 Required keys filled; Recommended keys empty: ['priority']",
+        "status": "pass",
+        "detail": "all 32 Required and 4 Recommended keys filled",
         "missing": [],
-        "recommended_missing": [
-          "priority"
-        ]
+        "recommended_missing": []
       },
       {
         "check": "metadata_consistency",

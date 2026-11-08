@@ -65,12 +65,12 @@
       "Dollars"
     ]
   },
-  "quality_notes": "44265 rows in raw file; 3405 rows in processed file (Canada). Missing values: 108 of 3405 observations have no value (3.2%): 87 F (too unreliable to be published), 21 .. (not available for the reference period). Validation passed with warnings. Warnings: date_gaps: 3 annual periods have no data in the whole table: ['2018', '2020', '2022']; 1 series skip periods inside their own date range (1 periods in total), e.g. [\"Canada / Average expenditure per household | Collectors' items (e.g. stamps, coins)\"] | freshness: latest observation is 2023-01-01, 1406 days old; annual data is normally no more than 913 days old. Check whether the source still updates | period_change: 39 of 2938 changes (1.33%) are unusually large and listed for review (QA-OUT2), e.g. ['2023-01-01 Average expenditure per household | Total expenditure: +1.287e+04', '2023-01-01 Average expenditure per household | Total current consumption: +9020', '2019-01-01 Average expenditure per household | Total expenditure: +7245', '2023-01-01 Average expenditure per household | Shelter: +3395', '2023-01-01 Average expenditure per household | Principal accommodation: +2644'] Notes (INFO, see validation): terminated_series, missing_share, status_symbols, metadata_completeness.",
+  "quality_notes": "44265 rows in raw file; 3405 rows in processed file (Canada). Missing values: 108 of 3405 observations have no value (3.2%): 87 F (too unreliable to be published), 21 .. (not available for the reference period). Validation passed with warnings. Warnings: date_gaps: 3 annual periods have no data in the whole table: ['2018', '2020', '2022']; 1 series skip periods inside their own date range (1 periods in total), e.g. [\"Canada / Average expenditure per household | Collectors' items (e.g. stamps, coins)\"] | freshness: latest observation is 2023-01-01, 1406 days old; annual data is normally no more than 913 days old. Check whether the source still updates | period_change: 39 of 2938 changes (1.33%) are unusually large and listed for review (QA-OUT2), e.g. ['2023-01-01 Average expenditure per household | Total expenditure: +1.287e+04', '2023-01-01 Average expenditure per household | Total current consumption: +9020', '2019-01-01 Average expenditure per household | Total expenditure: +7245', '2023-01-01 Average expenditure per household | Shelter: +3395', '2023-01-01 Average expenditure per household | Principal accommodation: +2644'] Notes (INFO, see validation): terminated_series, missing_share, status_symbols.",
   "known_limitations": "The survey became biennial after 2017, so 2018, 2020 and 2022 are absent from the table. Categories changed between 2017 and 2019 (some added, some discontinued), so not every category covers every year. Categories are hierarchical (totals and their components), so they must not be summed. Values are in current dollars (not adjusted for inflation).",
-  "priority": null,
+  "priority": "high",
   "validation": {
     "status": "passed_with_warnings",
-    "run_at": "2026-11-07T15:57:11-05:00",
+    "run_at": "2026-11-07T20:55:37-05:00",
     "validator": "scripts/validation/validate_statcan_dataset.py",
     "standard": "RAI_Metadata_QA_Standard_v1.0",
     "mode": "reprocessed from the stored raw file (no download)",
@@ -218,12 +218,10 @@
       },
       {
         "check": "metadata_completeness",
-        "status": "info",
-        "detail": "all 32 Required keys filled; Recommended keys empty: ['priority']",
+        "status": "pass",
+        "detail": "all 32 Required and 4 Recommended keys filled",
         "missing": [],
-        "recommended_missing": [
-          "priority"
-        ]
+        "recommended_missing": []
       },
       {
         "check": "metadata_consistency",

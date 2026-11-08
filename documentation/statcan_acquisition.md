@@ -16,8 +16,8 @@ Every table the hub tracks is listed in `sources/statcan_tables.csv`, one row pe
 
 ```
 table_number,subject,category,geography,description,update_frequency,refresh_schedule,revision_policy,priority,known_limitations
-11-10-0222-01,household_spending,household,,"biennial (...)","after each ... release, 08:30 ET",,,"The survey became biennial after 2017, ..."
-14-10-0287-01,labour_force_characteristics,labour,,"monthly (...)","on Labour Force Survey release days, after 08:30 ET",,,"The full table is about 1.2 GB raw. ..."
+11-10-0222-01,household_spending,household,,"Average annual spending per household by detailed category ...","biennial (...)","after each ... release, 08:30 ET",unknown,high,"The survey became biennial after 2017, ..."
+14-10-0287-01,labour_force_characteristics,labour,,"Monthly Labour Force Survey estimates of employment, unemployment ...","monthly (...)","on Labour Force Survey release days, after 08:30 ET",scheduled,high,"Seasonally adjusted estimates are revised each January ..."
 ```
 
 | Column | Required | What to put |

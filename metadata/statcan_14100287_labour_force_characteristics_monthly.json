@@ -72,12 +72,12 @@
       "Persons in thousands"
     ]
   },
-  "quality_notes": "5475519 rows in raw file; 633969 rows in processed file (Canada). Missing values: 175958 of 633969 observations have no value (27.8%): 175958 .. (not available for the reference period). Validation passed with warnings. Warnings: missing_share: 175958 of 633969 values empty (27.8%; limit 5%). Above the limit: a reviewer records a disposition (accept with reason, fix or waive) | period_change: 6469 of 456970 changes (1.42%) are unusually large and listed for review (QA-OUT2), e.g. ['2020-04-01 Employment | Total - Gender | 15 years and over | Estimate | Seasonally adjusted: -1972', '2020-04-01 Employment | Total - Gender | 15 to 64 years | Estimate | Seasonally adjusted: -1887', '2020-04-01 Employment | Total - Gender | 15 years and over | Estimate | Unadjusted: -1861', '2020-04-01 Employment | Total - Gender | 15 to 64 years | Estimate | Unadjusted: -1808', '2020-04-01 Employment | Total - Gender | 25 years and over | Estimate | Seasonally adjusted: -1507'] Notes (INFO, see validation): status_symbols, metadata_completeness.",
+  "quality_notes": "5475519 rows in raw file; 633969 rows in processed file (Canada). Missing values: 175958 of 633969 observations have no value (27.8%): 175958 .. (not available for the reference period). Validation passed with warnings. Warnings: missing_share: 175958 of 633969 values empty (27.8%; limit 5%). Above the limit: a reviewer records a disposition (accept with reason, fix or waive) | period_change: 6469 of 456970 changes (1.42%) are unusually large and listed for review (QA-OUT2), e.g. ['2020-04-01 Employment | Total - Gender | 15 years and over | Estimate | Seasonally adjusted: -1972', '2020-04-01 Employment | Total - Gender | 15 to 64 years | Estimate | Seasonally adjusted: -1887', '2020-04-01 Employment | Total - Gender | 15 years and over | Estimate | Unadjusted: -1861', '2020-04-01 Employment | Total - Gender | 15 to 64 years | Estimate | Unadjusted: -1808', '2020-04-01 Employment | Total - Gender | 25 years and over | Estimate | Seasonally adjusted: -1507'] Notes (INFO, see validation): status_symbols.",
   "known_limitations": "Seasonally adjusted estimates are revised each January for the previous three years, and the whole series is revised when population estimates are rebased. Seasonally adjusted and trend-cycle series are published together; choose series by series_id or label. The full table is about 1.2 GB raw.",
-  "priority": null,
+  "priority": "high",
   "validation": {
     "status": "passed_with_warnings",
-    "run_at": "2026-11-07T15:57:11-05:00",
+    "run_at": "2026-11-07T20:55:37-05:00",
     "validator": "scripts/validation/validate_statcan_dataset.py",
     "standard": "RAI_Metadata_QA_Standard_v1.0",
     "mode": "reprocessed from the stored raw file (no download)",
@@ -219,12 +219,10 @@
       },
       {
         "check": "metadata_completeness",
-        "status": "info",
-        "detail": "all 32 Required keys filled; Recommended keys empty: ['priority']",
+        "status": "pass",
+        "detail": "all 32 Required and 4 Recommended keys filled",
         "missing": [],
-        "recommended_missing": [
-          "priority"
-        ]
+        "recommended_missing": []
       },
       {
         "check": "metadata_consistency",
